@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+    <meta name="renderer" content="webkit">
+    <title>Router</title>
+    <link rel="stylesheet" href="css/element.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Original CSS and JS Links -->
+    <script type="text/javascript" src="js/json2.js"></script>
+    <script type="text/javascript" src="js/jquery-1.7.2.js"></script>
+    <script type="text/javascript" src="js/jquery.form.js"></script>
+    <script type="text/javascript" src="js/jquery.validate.js"></script>
+    <script type="text/javascript" src="js/vue.js"></script>
+    <script type="text/javascript" src="js/underscore-min.js"></script>
+    <script type="text/javascript" src="js/language_list.js"></script>
+    <script type="text/javascript" src="js/language.js"></script>
+    <script type="text/javascript" src="js/language/en.js"></script>
+    <script type="text/javascript" src="js/helper.js"></script>
+    <script type="text/javascript" src="js/main.js"></script>
+    <script type="text/javascript" src="js/login.js"></script>
+    <script type="text/javascript" src="js/element.js"></script>
+
+    <style>
+        /* Use modern fonts */
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Header Section */
+        #header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            border-bottom: 2px solid #0056b3;
+        }
+
+        #header img {
+            height: 50px;
+            border-radius: 5px;
+        }
+
+        /* Logo styling */
+        #logoDiv img {
+            max-height: 50px;
+        }
+
+        /* Main Container */
+        #main {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: calc(100vh - 70px);
+            background-color: #eef2f5;
+        }
+
+        /* Login Form */
+        .login_main {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .login_left_contener {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Form input styles */
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        input[type="button"] {
+            background-color: #007bff;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 16px;
+            width: 100%;
+        }
+
+        input[type="button"]:hover {
+            background-color: #0056b3;
+        }
+
+        /* Button styling for login */
+        .login_button {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .login_button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Details Section */
+        .detail {
+            font-size: 14px;
+            padding: 10px 0;
+        }
+
+        table.detail {
+            width: 100%;
+            border-spacing: 0 10px;
+        }
+
+        table.detail th {
+            font-weight: 500;
+            text-align: left;
+            padding-right: 20px;
+        }
+
+        table.detail td {
+            text-align: right;
+            font-weight: 400;
+        }
+
+        /* Footer */
+        #copyright {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            color: #777;
+        }
+    </style>
+
+    <script type="text/javascript">
+        document.oncontextmenu = function (event) {
+            if (window.event) {
+                event = window.event;
+            }
+            try {
+                var the = event.srcElement;
+                if (!((the.tagName == "INPUT" && the.type.toLowerCase() == "text") || the.tagName == "TEXTAREA")) {
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        document.onkeydown = function () {
+            if (window.event.ctrlKey && window.event.keyCode == 85) {
+                event.keyCode = 0;
+                event.returnValue = false;
+                return false;
+            }
+        }
+    </script>
+</head>
+
+<body>
+    <div id="loginHtml" v-cloak>
+        <template>
+            <div id="header">
+                <div style="float: left;margin-left: 15px;" v-show="logoDivShow && styleSmart"><img src="images/logo_smart_home.png"></div>
+                <div id="logoDiv" v-show="logoDivShow">
+                    <img src="images/customer.gif" onerror="noImage(this)">
+                </div>
+                <div id="siginfo" v-show="siginfoShow">
+                    <table cellpadding="0" cellspacing="4">
+                        <tr>
+                            <td id="voiceInfo" v-html="voiceInfo"></td>
+                            <td id="simInfo" v-html="simInfo"></td>
+                            <td id="netInfo" v-html="netInfo"></td>
+                            <td id="wifiInfo" v-html="wifiInfo"></td>
+                            <td id="wifiInfo5g" v-if="showWifi5G" v-html="wifiInfo5g"></td>
+                            <td id="lan1" v-html="lan1" v-show="lan1Show"></td>
+                            <td id="lan2" v-html="lan2" v-show="lan2Show"></td>
+                            <td id="lan3" v-html="lan3" v-show="lan3Show"></td>
+                            <td id="wan1" v-html="wan1" v-show="wan1Show"></td>
+                            <td id="batteryStatu" v-if="batteryShow" v-html="batteryStatu"></td>
+                            <td id="smsInfo"></td>
+                        </tr>
+                    </table>
+                    <div style="display: flex; position: absolute; right: 21%; top: 0px;">
+                        <div @click="showLogin=true" v-if="!showLogin" class="login_button">
+                            {{login}}
+                        </div>
+                        <el-select v-model="languageSelect" v-if="languageSelectShow" size="mini" @change="changeLanguage" style="width: 90px;">
+                            <el-option v-for="item in languageList" :key="item.value" :label="item.name" :value="item.value"></el-option>
+                        </el-select>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="main" class="login_main">
+                <div id="left" class="login_left" v-if="showLogin">
+                    <div class="login_left_contener">
+                        <div id="login_template">
+                            <div class="login_background_container">
+                                <table class="login_table">
+                                    <tr class="tr_login tr_username">
+                                        <td><div style="font-size: 14px;">{{username}}</div></td>
+                                    </tr>
+                                    <tr class="tr_login tr_username">
+                                        <td><input type="text" id="username" name="username" maxlength="20" v-model="usernameValue" @keydown="focusPasswd($event)" /></td>
+                                    </tr>
+                                    <tr class="tr_login tr_username">
+                                        <td><div style="font-size: 14px;">{{passwd}}</div></td>
+                                    </tr>
+                                    <tr class="tr_login tr_password">
+                                        <td><input type="password" id="passwd" name="passwd" v-model="passwdValue" maxlength="20" @keydown="clickLoginBtn($event)" ref="passwd" /></td>
+                                    </tr>
+                                    <tr class="tr_login tr_btn">
+                                        <td><input type="button" id="btnLogin" :value="login" @click="btnLogin" :disabled="disabled" /></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="login_right">
+                <div id="device_info" class="login_right">
+                    <div class="detail">{{deviceInfo}}</div>
+                    <table class="detail">
+                        <tr v-for="(item,index) in deviceList">
+                            <th>{{item}}</th>
+                            <td>{{deviceValueList[index]}}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </template>
+    </div>
+</body>
+
+</html>
