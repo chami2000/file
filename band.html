@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LTE Band Control</title>
+    <style>
+        :root {
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #2d2d2d;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --accent: #3498db;
+            --danger: #e74c3c;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .settings-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .settings-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .credentials {
+            display: none;
+            margin-bottom: 1.5rem;
+        }
+
+        .credentials.visible {
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--bg-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .button {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .button-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+
+        .button-primary:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+
+        .band-selection {
+            margin: 1.5rem 0;
+        }
+
+        .band-selection h2 {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+
+        .checkbox-group {
+            margin-bottom: 0.5rem;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+
+        .status {
+            margin-top: 1.5rem;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+        }
+
+        .status.success {
+            background-color: var(--success);
+            color: white;
+        }
+
+        .status.error {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        .status.warning {
+            background-color: var(--warning);
+            color: black;
+        }
+
+        .current-bands {
+            margin-top: 1rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>LTE Band Control</h1>
+            <button class="settings-btn" id="settingsBtn">⚙</button>
+        </div>
+
+        <div class="credentials" id="credentials">
+            <div class="input-group">
+                <label for="routerIp">Router IP</label>
+                <input type="text" id="routerIp" value="192.168.1.1">
+            </div>
+            <div class="input-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" value="administrator">
+            </div>
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" value="f6b489579bb7f5ceb4d3d94d0874a68c">
+            </div>
+            <button class="button button-primary" id="connectBtn">Connect</button>
+        </div>
+
+        <div class="band-selection">
+            <h2>Select LTE Bands:</h2>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" value="EUTRAN_BAND1" disabled>
+                    Band 1
+                </label>
+            </div>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" value="EUTRAN_BAND3" disabled>
+                    Band 3
+                </label>
+            </div>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" value="EUTRAN_BAND5" disabled>
+                    Band 5
+                </label>
+            </div>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" value="EUTRAN_BAND38" disabled>
+                    Band 38
+                </label>
+            </div>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" value="EUTRAN_BAND41" disabled>
+                    Band 41
+                </label>
+            </div>
+        </div>
+
+        <button class="button button-primary" id="changeBandsBtn" disabled>
+            Change Bands
+        </button>
+
+        <div class="current-bands" id="currentBands">
+            Current Bands: None
+        </div>
+
+        <div class="status" id="status" style="display: none;"></div>
+    </div>
+
+    <script>
+        class RouterControl {
+            constructor(routerIp, username, password) {
+                this.routerIp = routerIp;
+                this.username = username;
+                this.password = password;
+                this.sessionId = null;
+            }
+
+            async getSessionId() {
+                const url = `http://${this.routerIp}/cgi-bin/lua.cgi`;
+                const data = {
+                    cmd: 100,
+                    method: "POST",
+                    username: this.username,
+                    passwd: this.password
+                };
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            this.sessionId = result.sessionId;
+                            return this.sessionId;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+                return null;
+            }
+
+            async changeLteBands(bands) {
+                if (!this.sessionId) {
+                    if (!await this.getSessionId()) {
+                        return false;
+                    }
+                }
+
+                const url = `http://${this.routerIp}/cgi-bin/lua.cgi`;
+                const data = {
+                    band: bands,
+                    method: "POST",
+                    cmd: 166,
+                    sessionId: this.sessionId
+                };
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        return result.success;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+                return false;
+            }
+
+            async getCurrentBands() {
+                if (!this.sessionId) {
+                    if (!await this.getSessionId()) {
+                        return null;
+                    }
+                }
+
+                const url = `http://${this.routerIp}/cgi-bin/lua.cgi`;
+                const data = {
+                    cmd: 165,
+                    method: "GET",
+                    sessionId: this.sessionId
+                };
+
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            return result.lockband;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+                return null;
+            }
+        }
+
+        // UI Controller
+        class LTEBandControlUI {
+            constructor() {
+                this.router = null;
+                this.initializeElements();
+                this.attachEventListeners();
+                this.autoConnect();
+            }
+
+            initializeElements() {
+                this.settingsBtn = document.getElementById('settingsBtn');
+                this.credentials = document.getElementById('credentials');
+                this.connectBtn = document.getElementById('connectBtn');
+                this.changeBandsBtn = document.getElementById('changeBandsBtn');
+                this.currentBandsEl = document.getElementById('currentBands');
+                this.statusEl = document.getElementById('status');
+                this.checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            }
+
+            attachEventListeners() {
+                this.settingsBtn.addEventListener('click', () => {
+                    this.credentials.classList.toggle('visible');
+                });
+
+                this.connectBtn.addEventListener('click', () => this.connectRouter());
+                this.changeBandsBtn.addEventListener('click', () => this.changeBands());
+            }
+
+            async autoConnect() {
+                await this.connectRouter();
+            }
+
+            async connectRouter() {
+                const ip = document.getElementById('routerIp').value;
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                this.router = new RouterControl(ip, username, password);
+                if (await this.router.getSessionId()) {
+                    this.showStatus('Successfully connected to router', 'success');
+                    this.enableControls();
+                    await this.updateCurrentBands();
+                } else {
+                    this.showStatus('Failed to connect to router', 'error');
+                }
+            }
+
+            async changeBands() {
+                const selectedBands = Array.from(this.checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+
+                if (selectedBands.length === 0) {
+                    this.showStatus('Please select at least one band', 'warning');
+                    return;
+                }
+
+                if (await this.router.changeLteBands(selectedBands)) {
+                    this.showStatus('Successfully changed bands', 'success');
+                    await this.updateCurrentBands();
+                } else {
+                    this.showStatus('Failed to change bands', 'error');
+                }
+            }
+
+            async updateCurrentBands() {
+                const currentBands = await this.router.getCurrentBands();
+                if (currentBands) {
+                    const bandNumbers = currentBands.map(band => band.split('_')[1]);
+                    this.currentBandsEl.textContent = `Current Bands: ${bandNumbers.join(', ')}`;
+                    
+                    this.checkboxes.forEach(cb => {
+                        cb.checked = currentBands.includes(cb.value);
+                    });
+                } else {
+                    this.currentBandsEl.textContent = 'Failed to fetch current bands';
+                }
+            }
+
+            enableControls() {
+                this.checkboxes.forEach(cb => cb.disabled = false);
+                this.changeBandsBtn.disabled = false;
+            }
+
+            showStatus(message, type) {
+                this.statusEl.textContent = message;
+                this.statusEl.className = `status ${type}`;
+                this.statusEl.style.display = 'block';
+                
+                setTimeout(() => {
+                    this.statusEl.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new LTEBandControlUI();
+        });
+    </script>
+</body>
+</html>
