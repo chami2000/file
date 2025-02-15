@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LTE Band Control</title>
     <style>
         :root {
-            --bg-primary: #1a1a1a;
-            --bg-secondary: #2d2d2d;
-            --text-primary: #ffffff;
-            --text-secondary: #b3b3b3;
-            --accent: #3498db;
-            --danger: #e74c3c;
+            --primary: #3498db;
+            --surface: #1a1a1a;
+            --surface-2: #2d2d2d;
+            --text: #ffffff;
+            --text-2: #b3b3b3;
             --success: #2ecc71;
+            --error: #e74c3c;
             --warning: #f1c40f;
         }
 
@@ -20,249 +20,293 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: system-ui, -apple-system, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
+            background: var(--surface);
+            color: var(--text);
             min-height: 100vh;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            padding: 12px;
         }
 
-        .container {
-            background-color: var(--bg-secondary);
-            padding: 2rem;
+        .app {
+            background: var(--surface-2);
             border-radius: 12px;
+            padding: 16px;
             width: 100%;
-            max-width: 400px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 480px;
+            margin: auto;
         }
 
         .header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            margin-bottom: 1.5rem;
+            justify-content: space-between;
+            margin-bottom: 20px;
         }
 
-        .settings-btn {
-            background: none;
+        .title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
             border: none;
-            color: var(--text-secondary);
-            font-size: 1.5rem;
+            background: transparent;
+            color: var(--text-2);
+            font-size: 20px;
+            border-radius: 20px;
             cursor: pointer;
-            padding: 0.5rem;
-            border-radius: 50%;
-            transition: background-color 0.2s;
         }
 
-        .settings-btn:hover {
-            background-color: rgba(255, 255, 255, 0.1);
+        .icon-btn:active {
+            background: rgba(255,255,255,0.1);
         }
 
-        .credentials {
+        .form {
             display: none;
-            margin-bottom: 1.5rem;
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
-        .credentials.visible {
-            display: block;
+        .form.show {
+            display: flex;
+            flex-direction: column;
         }
 
         .input-group {
-            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
 
         .input-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: var(--text-secondary);
+            color: var(--text-2);
+            font-size: 14px;
         }
 
         .input-group input {
-            width: 100%;
-            padding: 0.75rem;
-            background-color: var(--bg-primary);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-size: 0.9rem;
+            background: var(--surface);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 16px;
+            padding: 12px;
         }
 
         .input-group input:focus {
             outline: none;
-            border-color: var(--accent);
+            border-color: var(--primary);
         }
 
-        .button {
-            width: 100%;
-            padding: 0.75rem;
+        .btn {
+            background: var(--primary);
+            color: white;
             border: none;
-            border-radius: 6px;
-            font-size: 1rem;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 500;
             cursor: pointer;
-            transition: opacity 0.2s;
         }
 
-        .button:disabled {
+        .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
 
-        .button-primary {
-            background-color: var(--accent);
-            color: white;
+        .btn:active:not(:disabled) {
+            transform: scale(0.98);
         }
 
-        .button-primary:hover:not(:disabled) {
-            opacity: 0.9;
+        .bands {
+            margin: 20px 0;
         }
 
-        .band-selection {
-            margin: 1.5rem 0;
+        .band-title {
+            color: var(--text-2);
+            font-size: 16px;
+            margin-bottom: 12px;
         }
 
-        .band-selection h2 {
-            margin-bottom: 1rem;
-            font-size: 1.1rem;
-            color: var(--text-secondary);
-        }
-
-        .checkbox-group {
-            margin-bottom: 0.5rem;
-        }
-
-        .checkbox-group label {
+        .band-item {
             display: flex;
             align-items: center;
-            cursor: pointer;
+            justify-content: space-between;
+            background: var(--surface);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
         }
 
-        .checkbox-group input[type="checkbox"] {
-            margin-right: 0.5rem;
+        .band-name {
+            font-size: 16px;
+        }
+
+        .switch {
+            width: 50px;
+            height: 28px;
+            position: relative;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 14px;
+            transition: 0.3s;
+        }
+
+        .slider:before {
+            content: "";
+            position: absolute;
+            height: 24px;
+            width: 24px;
+            left: 2px;
+            bottom: 2px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        input:checked + .slider {
+            background: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+
+        input:disabled + .slider {
+            opacity: 0.5;
         }
 
         .status {
-            margin-top: 1.5rem;
-            padding: 0.75rem;
-            border-radius: 6px;
-            font-size: 0.9rem;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-weight: 500;
+            display: none;
         }
 
-        .status.success {
-            background-color: var(--success);
-            color: white;
+        .status.success { background: var(--success); }
+        .status.error { background: var(--error); }
+        .status.warning { background: var(--warning); color: black; }
+
+        .current {
+            text-align: center;
+            color: var(--text-2);
+            margin-top: 16px;
+            font-size: 14px;
         }
 
-        .status.error {
-            background-color: var(--danger);
-            color: white;
-        }
-
-        .status.warning {
-            background-color: var(--warning);
-            color: black;
-        }
-
-        .current-bands {
-            margin-top: 1rem;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
+        @media (max-width: 360px) {
+            body { padding: 8px; }
+            .app { padding: 12px; }
+            .band-item { padding: 10px; }
+            .title { font-size: 18px; }
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="app">
         <div class="header">
-            <h1>LTE Band Control</h1>
-            <button class="settings-btn" id="settingsBtn">⚙</button>
+            <h1 class="title">LTE Band Control</h1>
+            <button class="icon-btn" id="settingsBtn">⚙️</button>
         </div>
 
-        <div class="credentials" id="credentials">
+        <form class="form" id="loginForm">
             <div class="input-group">
-                <label for="routerIp">Router IP</label>
+                <label>Router IP</label>
                 <input type="text" id="routerIp" value="192.168.1.1">
             </div>
             <div class="input-group">
-                <label for="username">Username</label>
+                <label>Username</label>
                 <input type="text" id="username" value="administrator">
             </div>
             <div class="input-group">
-                <label for="password">Password</label>
+                <label>Password</label>
                 <input type="password" id="password" value="f6b489579bb7f5ceb4d3d94d0874a68c">
             </div>
-            <button class="button button-primary" id="connectBtn">Connect</button>
-        </div>
+            <button type="submit" class="btn">Connect</button>
+        </form>
 
-        <div class="band-selection">
-            <h2>Select LTE Bands:</h2>
-            <div class="checkbox-group">
-                <label>
+        <div class="bands">
+            <h2 class="band-title">Select LTE Bands</h2>
+            <div class="band-item">
+                <span class="band-name">Band 1</span>
+                <label class="switch">
                     <input type="checkbox" value="EUTRAN_BAND1" disabled>
-                    Band 1
+                    <span class="slider"></span>
                 </label>
             </div>
-            <div class="checkbox-group">
-                <label>
+            <div class="band-item">
+                <span class="band-name">Band 3</span>
+                <label class="switch">
                     <input type="checkbox" value="EUTRAN_BAND3" disabled>
-                    Band 3
+                    <span class="slider"></span>
                 </label>
             </div>
-            <div class="checkbox-group">
-                <label>
+            <div class="band-item">
+                <span class="band-name">Band 5</span>
+                <label class="switch">
                     <input type="checkbox" value="EUTRAN_BAND5" disabled>
-                    Band 5
+                    <span class="slider"></span>
                 </label>
             </div>
-            <div class="checkbox-group">
-                <label>
+            <div class="band-item">
+                <span class="band-name">Band 38</span>
+                <label class="switch">
                     <input type="checkbox" value="EUTRAN_BAND38" disabled>
-                    Band 38
+                    <span class="slider"></span>
                 </label>
             </div>
-            <div class="checkbox-group">
-                <label>
+            <div class="band-item">
+                <span class="band-name">Band 41</span>
+                <label class="switch">
                     <input type="checkbox" value="EUTRAN_BAND41" disabled>
-                    Band 41
+                    <span class="slider"></span>
                 </label>
             </div>
         </div>
 
-        <button class="button button-primary" id="changeBandsBtn" disabled>
-            Change Bands
-        </button>
-
-        <div class="current-bands" id="currentBands">
-            Current Bands: None
-        </div>
-
-        <div class="status" id="status" style="display: none;"></div>
+        <button class="btn" id="applyBtn" disabled>Apply Changes</button>
+        <div class="current" id="currentBands">Current Bands: None</div>
+        <div class="status" id="status"></div>
     </div>
 
     <script>
-        class RouterControl {
-            constructor(routerIp, username, password) {
-                this.routerIp = routerIp;
-                this.username = username;
-                this.password = password;
-                this.sessionId = null;
+        class Router {
+            constructor(ip, user, pass) {
+                this.ip = ip;
+                this.user = user;
+                this.pass = pass;
+                this.session = null;
             }
 
-            async getSessionId() {
-                const url = `http://${this.routerIp}/cgi-bin/lua.cgi`;
+            async login() {
+                const url = `http://${this.ip}/cgi-bin/lua.cgi`;
                 const data = {
                     cmd: 100,
                     method: "POST",
-                    username: this.username,
-                    passwd: this.password
+                    username: this.user,
+                    passwd: this.pass
                 };
 
                 try {
-                    const response = await fetch(url, {
+                    const res = await fetch(url, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -271,70 +315,31 @@
                         body: JSON.stringify(data)
                     });
 
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.success) {
-                            this.sessionId = result.sessionId;
-                            return this.sessionId;
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (json.success) {
+                            this.session = json.sessionId;
+                            return true;
                         }
                     }
-                } catch (error) {
-                    console.error('Error:', error);
-                }
-                return null;
-            }
-
-            async changeLteBands(bands) {
-                if (!this.sessionId) {
-                    if (!await this.getSessionId()) {
-                        return false;
-                    }
-                }
-
-                const url = `http://${this.routerIp}/cgi-bin/lua.cgi`;
-                const data = {
-                    band: bands,
-                    method: "POST",
-                    cmd: 166,
-                    sessionId: this.sessionId
-                };
-
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify(data)
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        return result.success;
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
+                } catch (err) {
+                    console.error('Login error:', err);
                 }
                 return false;
             }
 
-            async getCurrentBands() {
-                if (!this.sessionId) {
-                    if (!await this.getSessionId()) {
-                        return null;
-                    }
-                }
+            async getBands() {
+                if (!this.session && !(await this.login())) return null;
 
-                const url = `http://${this.routerIp}/cgi-bin/lua.cgi`;
+                const url = `http://${this.ip}/cgi-bin/lua.cgi`;
                 const data = {
                     cmd: 165,
                     method: "GET",
-                    sessionId: this.sessionId
+                    sessionId: this.session
                 };
 
                 try {
-                    const response = await fetch(url, {
+                    const res = await fetch(url, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -343,118 +348,153 @@
                         body: JSON.stringify(data)
                     });
 
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.success) {
-                            return result.lockband;
-                        }
+                    if (res.ok) {
+                        const json = await res.json();
+                        if (json.success) return json.lockband;
                     }
-                } catch (error) {
-                    console.error('Error:', error);
+                } catch (err) {
+                    console.error('Get bands error:', err);
                 }
                 return null;
             }
+
+            async setBands(bands) {
+                if (!this.session && !(await this.login())) return false;
+
+                const url = `http://${this.ip}/cgi-bin/lua.cgi`;
+                const data = {
+                    cmd: 166,
+                    method: "POST",
+                    sessionId: this.session,
+                    band: bands
+                };
+
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    if (res.ok) {
+                        const json = await res.json();
+                        return json.success;
+                    }
+                } catch (err) {
+                    console.error('Set bands error:', err);
+                }
+                return false;
+            }
         }
 
-        // UI Controller
-        class LTEBandControlUI {
+        class App {
             constructor() {
                 this.router = null;
-                this.initializeElements();
-                this.attachEventListeners();
+                this.setupUI();
                 this.autoConnect();
             }
 
-            initializeElements() {
+            setupUI() {
+                // Get elements
+                this.form = document.getElementById('loginForm');
                 this.settingsBtn = document.getElementById('settingsBtn');
-                this.credentials = document.getElementById('credentials');
-                this.connectBtn = document.getElementById('connectBtn');
-                this.changeBandsBtn = document.getElementById('changeBandsBtn');
-                this.currentBandsEl = document.getElementById('currentBands');
-                this.statusEl = document.getElementById('status');
+                this.applyBtn = document.getElementById('applyBtn');
+                this.status = document.getElementById('status');
+                this.currentBands = document.getElementById('currentBands');
                 this.checkboxes = document.querySelectorAll('input[type="checkbox"]');
-            }
 
-            attachEventListeners() {
-                this.settingsBtn.addEventListener('click', () => {
-                    this.credentials.classList.toggle('visible');
-                });
+                // Add event listeners
+                this.settingsBtn.onclick = () => this.form.classList.toggle('show');
+                this.form.onsubmit = (e) => this.handleConnect(e);
+                this.applyBtn.onclick = () => this.handleApply();
 
-                this.connectBtn.addEventListener('click', () => this.connectRouter());
-                this.changeBandsBtn.addEventListener('click', () => this.changeBands());
+                // Add haptic feedback
+                if ('vibrate' in navigator) {
+                    const vibrate = () => navigator.vibrate(50);
+                    this.settingsBtn.addEventListener('click', vibrate);
+                    this.applyBtn.addEventListener('click', vibrate);
+                    this.checkboxes.forEach(cb => cb.addEventListener('change', vibrate));
+                }
             }
 
             async autoConnect() {
-                await this.connectRouter();
+                const ip = document.getElementById('routerIp').value;
+                const user = document.getElementById('username').value;
+                const pass = document.getElementById('password').value;
+                await this.connect(ip, user, pass);
             }
 
-            async connectRouter() {
+            async handleConnect(e) {
+                e.preventDefault();
                 const ip = document.getElementById('routerIp').value;
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
+                const user = document.getElementById('username').value;
+                const pass = document.getElementById('password').value;
+                await this.connect(ip, user, pass);
+            }
 
-                this.router = new RouterControl(ip, username, password);
-                if (await this.router.getSessionId()) {
-                    this.showStatus('Successfully connected to router', 'success');
+            async connect(ip, user, pass) {
+                this.showStatus('Connecting...', 'warning');
+                this.router = new Router(ip, user, pass);
+                
+                if (await this.router.login()) {
+                    this.showStatus('Connected', 'success');
                     this.enableControls();
-                    await this.updateCurrentBands();
+                    await this.updateBands();
+                    this.form.classList.remove('show');
                 } else {
-                    this.showStatus('Failed to connect to router', 'error');
+                    this.showStatus('Connection failed', 'error');
                 }
             }
 
-            async changeBands() {
-                const selectedBands = Array.from(this.checkboxes)
+            async handleApply() {
+                const selected = Array.from(this.checkboxes)
                     .filter(cb => cb.checked)
                     .map(cb => cb.value);
 
-                if (selectedBands.length === 0) {
-                    this.showStatus('Please select at least one band', 'warning');
+                if (!selected.length) {
+                    this.showStatus('Select at least one band', 'warning');
                     return;
                 }
 
-                if (await this.router.changeLteBands(selectedBands)) {
-                    this.showStatus('Successfully changed bands', 'success');
-                    await this.updateCurrentBands();
+                this.showStatus('Applying changes...', 'warning');
+                if (await this.router.setBands(selected)) {
+                    this.showStatus('Changes applied', 'success');
+                    await this.updateBands();
                 } else {
-                    this.showStatus('Failed to change bands', 'error');
+                    this.showStatus('Failed to apply changes', 'error');
                 }
             }
 
-            async updateCurrentBands() {
-                const currentBands = await this.router.getCurrentBands();
-                if (currentBands) {
-                    const bandNumbers = currentBands.map(band => band.split('_')[1]);
-                    this.currentBandsEl.textContent = `Current Bands: ${bandNumbers.join(', ')}`;
-                    
+            async updateBands() {
+                const bands = await this.router.getBands();
+                if (bands) {
+                    this.currentBands.textContent = `Current Bands: ${bands.map(b => b.split('_')[1].slice(4)).join(', ')}`;
                     this.checkboxes.forEach(cb => {
-                        cb.checked = currentBands.includes(cb.value);
+                        cb.checked = bands.includes(cb.value);
                     });
                 } else {
-                    this.currentBandsEl.textContent = 'Failed to fetch current bands';
+                    this.currentBands.textContent = 'Failed to get current bands';
                 }
             }
 
             enableControls() {
                 this.checkboxes.forEach(cb => cb.disabled = false);
-                this.changeBandsBtn.disabled = false;
+                this.applyBtn.disabled = false;
             }
 
             showStatus(message, type) {
-                this.statusEl.textContent = message;
-                this.statusEl.className = `status ${type}`;
-                this.statusEl.style.display = 'block';
-                
-                setTimeout(() => {
-                    this.statusEl.style.display = 'none';
-                }, 3000);
+                this.status.textContent = message;
+                this.status.className = `status ${type}`;
+                this.status.style.display = 'block';
+                setTimeout(() => this.status.style.display = 'none', 3000);
             }
         }
 
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', () => {
-            new LTEBandControlUI();
-        });
+        // Start the app
+        document.addEventListener('DOMContentLoaded', () => new App());
     </script>
 </body>
 </html>
