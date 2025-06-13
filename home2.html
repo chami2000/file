@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OpenWRT LTE Status Dashboard (Live)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Google Fonts for Modern UI -->
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:600,400&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #181c24;
+      color: #e3e6eb;
+      font-family: 'Montserrat', Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .dashboard {
+      max-width: 900px;
+      margin: 32px auto;
+      background: #232733;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px #0005;
+      padding: 32px;
+    }
+    h1, h2 {
+      color: #4fc3f7;
+      margin-top: 0;
+    }
+    .section {
+      margin-bottom: 36px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid #2d313c;
+    }
+    .flex-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 32px;
+      align-items: flex-start;
+    }
+    .card {
+      background: #22252d;
+      border-radius: 10px;
+      padding: 18px 22px;
+      box-shadow: 0 2px 6px #000a;
+      margin-bottom: 18px;
+      min-width: 220px;
+      flex: 1;
+    }
+    .kv-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+      font-size: 15px;
+    }
+    .kv-table td {
+      padding: 5px 8px;
+      border-bottom: 1px solid #242835;
+    }
+    .kv-table td.key {
+      color: #90caf9;
+      font-weight: bold;
+      width: 160px;
+    }
+    .kv-table td.value {
+      color: #e3e6eb;
+      text-align: right;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      background: #333c59;
+      color: #ffb300;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-left: 8px;
+    }
+    .bar-container {
+      background: #232733;
+      border-radius: 8px;
+      height: 18px;
+      width: 100%;
+      margin: 8px 0;
+      overflow: hidden;
+      box-shadow: 0 1px 4px #1115;
+    }
+    .bar {
+      height: 100%;
+      transition: width 0.7s;
+    }
+    .bar.signal { background: linear-gradient(90deg, #4caf50, #ffeb3b 80%, #ff5252 100%);}
+    .bar.sinr { background: linear-gradient(90deg, #2196f3, #00bcd4);}
+    .bar.rsrq { background: linear-gradient(90deg, #ffd600, #ff5252);}
+    .bar.cqi { background: linear-gradient(90deg, #00e676, #3f51b5);}
+    .bar.mcs { background: linear-gradient(90deg, #ff4081, #536dfe);}
+    .bar.rank { background: linear-gradient(90deg, #ff9800, #00e676);}
+    .bar.ca-cinr { background: linear-gradient(90deg, #ba68c8, #69f0ae);}
+    .bar.ca-rsrq { background: linear-gradient(90deg, #ffa726, #ef5350);}
+    .bar.ca-rsrp { background: linear-gradient(90deg, #7986cb, #ffb300);}
+    .bar.ca-earfcn { background: linear-gradient(90deg, #80cbc4, #b2dfdb);}
+    .bar.rssi { background: linear-gradient(90deg, #4caf50, #bdbdbd);}
+    .label {
+      font-size: 12px;
+      color: #90caf9;
+      margin-right: 12px;
+    }
+    .status-dot {
+      height: 14px;
+      width: 14px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+    .dot-success { background: #43e97b; }
+    .dot-fail { background: #ff5252;}
+    .dot-warn { background: #ffb300;}
+    .dot-grey { background: #616161;}
+    .last-update {
+      font-size: 12px;
+      color: #b0b6c4;
+      float: right;
+      margin-top: -42px;
+    }
+    .polling-controls {
+      margin-top: 10px;
+      margin-bottom: 10px;
+      text-align: right;
+    }
+    .polling-controls label {
+      font-size: 13px;
+      color: #90caf9;
+      margin-right: 8px;
+    }
+    .polling-controls input {
+      width: 60px;
+      padding: 3px 5px;
+      border-radius: 5px;
+      border: none;
+      background: #232733;
+      color: #e3e6eb;
+      font-size: 14px;
+      margin-left: 6px;
+      outline: none;
+      box-shadow: 0 1px 4px #1115;
+    }
+    @media (max-width: 700px) {
+      .flex-row { flex-direction: column;}
+      .dashboard { padding: 12px;}
+      .last-update { float: none; margin-top: 6px;}
+      .polling-controls { text-align: left;}
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <h1>🌐 OpenWRT LTE Router Dashboard <span class="last-update" id="lastUpdate">Updating...</span></h1>
+    <div class="polling-controls">
+      <label for="pollingInterval">OPS (Update/sec):</label>
+      <input type="number" min="0.2" max="10" step="0.1" id="pollingInterval" value="0.2" />
+      <span style="color:#b0b6c4; font-size:12px;">(Lower value = faster updates)</span>
+    </div>
+    <div class="section">
+      <h2>Carrier Aggregation</h2>
+      <span class="label">CA Active Status:</span>
+      <span id="caActiveDot" class="status-dot dot-grey"></span>
+      <span id="caActiveText" style="font-weight:bold;color:#b0b6c4;">Loading...</span>
+    </div>
+
+    <div class="section flex-row">
+      <div class="card">
+        <h2>Modem & Network</h2>
+        <table class="kv-table">
+          <tr><td class="key">Provider</td><td class="value" id="provider"></td></tr>
+          <tr><td class="key">PLMN</td><td class="value" id="plmn"></td></tr>
+          <tr><td class="key">Network Type</td><td class="value" id="networkType"></td></tr>
+          <tr><td class="key">4G Registered</td><td class="value" id="reg4g"></td></tr>
+          <tr><td class="key">Roaming</td><td class="value" id="roaming"></td></tr>
+          <tr><td class="key">Service Status</td><td class="value" id="svcStatus"></td></tr>
+          <tr><td class="key">Link Status</td><td class="value" id="linkStatus"></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h2>Primary Band</h2>
+        <table class="kv-table">
+          <tr><td class="key">Cell ID</td><td class="value" id="cellId"></td></tr>
+          <tr><td class="key">eNodeB</td><td class="value" id="enodeb"></td></tr>
+          <tr><td class="key">PCI</td><td class="value" id="pci"></td></tr>
+          <tr><td class="key">Band</td><td class="value" id="band"></td></tr>
+          <tr><td class="key">EARFCN</td><td class="value" id="earfcn"></td></tr>
+          <tr><td class="key">Bandwidth</td><td class="value" id="pbw"></td></tr>
+        </table>
+      </div>
+      <div class="card">
+        <h2>Secondary Band</h2>
+        <table class="kv-table">
+          <tr><td class="key">Cell ID</td><td class="value" id="cellId2"></td></tr>
+          <tr><td class="key">eNodeB</td><td class="value" id="enodeb2"></td></tr>
+          <tr><td class="key">PCI</td><td class="value" id="caPci"></td></tr>
+          <tr><td class="key">Band</td><td class="value" id="caBand"></td></tr>
+          <tr><td class="key">EARFCN</td><td class="value" id="caEarfcn"></td></tr>
+          <tr><td class="key">Bandwidth</td><td class="value" id="sbw"></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="section flex-row">
+      <div class="card">
+        <h2>Primary Band Signal Strength</h2>
+        <div class="label">Signal Level: <b id="signalLvl"></b></div>
+        <div class="bar-container"><div class="bar signal" id="signalBar"></div></div>
+        <div class="label">RSRP: <b id="rsrp"></b></div>
+        <div class="bar-container"><div class="bar" id="rsrpBar" style="background:linear-gradient(90deg,#4caf50,#ffeb3b)"></div></div>
+        <div class="label">RSSI: <b id="rssi"></b></div>
+        <div class="bar-container"><div class="bar rssi" id="rssiBar"></div></div>
+        <div class="label">RSRQ: <b id="rsrq"></b></div>
+        <div class="bar-container"><div class="bar rsrq" id="rsrqBar"></div></div>
+        <div class="label">SINR: <b id="sinr"></b></div>
+        <div class="bar-container"><div class="bar sinr" id="sinrBar"></div></div>
+      </div>
+      <div class="card">
+        <h2>Secondary Band Signal Strength</h2>
+        <div class="label">CA RSRP: <b id="caRsrp"></b></div>
+        <div class="bar-container"><div class="bar ca-rsrp" id="caRsrpBar"></div></div>
+        <div class="label">RSRQ: <b id="caRsrq"></b></div>
+        <div class="bar-container"><div class="bar ca-rsrq" id="caRsrqBar"></div></div>
+        <div class="label">RSSI: <b id="caRssi"></b></div>
+        <div class="bar-container"><div class="bar" id="caRssiBar" style="background:linear-gradient(90deg,#4fc3f7,#00bcd4)"></div></div>
+        <div class="label">CINR: <b id="caCinr"></b></div>
+        <div class="bar-container"><div class="bar ca-cinr" id="caCinrBar"></div></div>
+      </div>
+      <div class="card">
+        <h2>Quality</h2>
+        <div class="label">CQI: <b id="cqi"></b></div>
+        <div class="bar-container"><div class="bar cqi" id="cqiBar"></div></div>
+        <div class="label">MCS: <b id="mcs"></b></div>
+        <div class="bar-container"><div class="bar mcs" id="mcsBar"></div></div>
+        <div class="label">MIMO Rank: <b id="rank"></b></div>
+        <div class="bar-container"><div class="bar rank" id="rankBar"></div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Raw Data & Status</h2>
+      <table class="kv-table">
+        <tr><td class="key">Network Type Num</td><td class="value" id="networkTypeNum"></td></tr>
+        <tr><td class="key">Active Channel</td><td class="value" id="activeChannel"></td></tr>
+        <tr><td class="key">LAC ID</td><td class="value" id="lacId"></td></tr>
+        <tr><td class="key">PS/CS Status</td><td class="value" id="pscsStatus"></td></tr>
+        <tr><td class="key">ACT</td><td class="value" id="act"></td></tr>
+        <tr><td class="key">IP Stack</td><td class="value" id="ipstack"></td></tr>
+        <tr><td class="key">3G Register Status</td><td class="value" id="reg3g"></td></tr>
+        <tr><td class="key">2G Register Status</td><td class="value" id="reg2g"></td></tr>
+        <tr><td class="key">GW All Band</td><td class="value" id="gwAllBand"></td></tr>
+        <tr><td class="key">LTE All Band</td><td class="value" id="lteAllBand"></td></tr>
+        <tr><td class="key">LTE Lock Band</td><td class="value" id="lteLockBand"></td></tr>
+        <tr><td class="key">GW Lock Band</td><td class="value" id="gwLockBand"></td></tr>
+        <tr><td class="key">TAC</td><td class="value" id="tac"></td></tr>
+        <tr><td class="key">Operator</td><td class="value" id="operator"></td></tr>
+        <tr><td class="key">RRC Status</td><td class="value" id="rrcStatus"></td></tr>
+      </table>
+    </div>
+  </div>
+  <script>
+    // Helper to map service status codes to text
+    function getServiceStatusText(code) {
+      switch (code) {
+        case "2": return '<span class="badge">Connected</span>';
+        case "1": return '<span class="badge" style="color:#43e97b;">Connecting</span>';
+        default: return '<span class="badge" style="color:#ff5252;">Disconnected</span>';
+      }
+    }
+
+    // Helper to show dot status
+    function setDot(dotEl, active) {
+      dotEl.classList.remove('dot-success', 'dot-fail', 'dot-grey');
+      dotEl.classList.add(active ? 'dot-success' : 'dot-fail');
+    }
+
+    // Login credentials (change for your router)
+    const USERNAME = "sztozed";
+    const PASSWORD = "e9665026ee2fd58788d7659e190a2e3e";
+
+    // Session state
+    let sessionId = null;
+    let pollingTimeout = null;
+    let pollingMs = 200; // default 0.2s (5 ops)
+
+    document.getElementById('pollingInterval').addEventListener('change', function() {
+      let ops = parseFloat(this.value);
+      if (isNaN(ops) || ops < 0.2) ops = 0.2;
+      if (ops > 10) ops = 10;
+      pollingMs = 1000 / ops;
+      this.value = ops.toFixed(2);
+      restartPolling();
+    });
+
+    // Login and retrieve sessionId
+    async function fetchSessionId() {
+      const res = await fetch("http://192.168.1.1/cgi-bin/lua.cgi", {
+        credentials: "omit",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:139.0) Gecko/20100101 Firefox/139.0",
+          "Accept": "text/plain, */*; q=0.01",
+          "Accept-Language": "en-US,en;q=0.5",
+          "Content-Type": "application/json; charset=UTF-8",
+          "X-Requested-With": "XMLHttpRequest",
+          "Priority": "u=0",
+          "Pragma": "no-cache",
+          "Cache-Control": "no-cache"
+        },
+        referrer: "http://192.168.1.1/login.html",
+        body: JSON.stringify({
+          cmd: 100,
+          method: "POST",
+          sessionId: "random",
+          username: USERNAME,
+          passwd: PASSWORD
+        }),
+        method: "POST",
+        mode: "cors"
+      });
+      const data = await res.json();
+      return data.sessionId;
+    }
+
+    // Fetch modem data using current sessionId
+    async function fetchModemData(sessionId) {
+      const res = await fetch("http://192.168.1.1/cgi-bin/lua.cgi", {
+        credentials: "omit",
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:139.0) Gecko/20100101 Firefox/139.0",
+          "Accept": "text/plain, */*; q=0.01",
+          "Accept-Language": "en-US,en;q=0.5",
+          "Content-Type": "application/json; charset=UTF-8",
+          "X-Requested-With": "XMLHttpRequest",
+          "Pragma": "no-cache",
+          "Cache-Control": "no-cache"
+        },
+        referrer: "http://192.168.1.1/index.html",
+        body: JSON.stringify({
+          cmd: 208,
+          method: "GET",
+          sessionId: sessionId
+        }),
+        method: "POST",
+        mode: "cors"
+      });
+      const json = await res.json();
+      return json.data;
+    }
+
+    // Update all dashboard elements with modem data
+    function updateDashboard(data) {
+      // CA
+      const caActive = data.caModem?.ca_activ_status === 1 || data.caModem?.ca_activ_status === "1";
+      setDot(document.getElementById("caActiveDot"), caActive);
+      document.getElementById("caActiveText").textContent = caActive ? "Active" : "Inactive";
+      document.getElementById("caActiveText").style.color = caActive ? "#4caf50" : "#ff5252";
+      // Modem
+      const m = data.modem || {};
+      document.getElementById("provider").textContent = m.service_provide_name || "";
+      document.getElementById("plmn").textContent = m.plmn || "";
+      document.getElementById("networkType").textContent = m.network_type_str || "";
+      document.getElementById("reg4g").textContent = m["4g_register_status"] === 1 || m["4g_register_status"] === "1" ? "Yes" : "No";
+      document.getElementById("roaming").textContent = m.roam_status === 1 || m.roam_status === "1" ? "Yes" : "No";
+      document.getElementById("svcStatus").innerHTML = getServiceStatusText(m.service_status);
+      document.getElementById("linkStatus").innerHTML = (m.network_link_stauts === 1 || m.network_link_stauts === "1")
+        ? '<span class="status-dot dot-success"></span>Connected'
+        : '<span class="status-dot dot-fail"></span>Disconnected';
+
+      // Primary Band Box
+      document.getElementById("cellId").textContent = m.cell_id || "";
+      document.getElementById("enodeb").textContent = m.enodebid || "";
+      document.getElementById("pci").textContent = m.pci || "";
+      document.getElementById("band").textContent = m.band || "";
+      document.getElementById("earfcn").textContent = m.earfcn || "";
+      document.getElementById("pbw").textContent = m.pbw || "";
+
+      // Secondary Band Box
+      // For eNodeB and CellID, use the same as primary (unless you have CA-specific fields)
+      document.getElementById("cellId2").textContent = m.cell_id || "";
+      document.getElementById("enodeb2").textContent = m.enodebid || "";
+      document.getElementById("caPci").textContent = m.ca_pci || "";
+      document.getElementById("caBand").textContent = m.sband || "";
+      document.getElementById("caEarfcn").textContent = m.ca_earfcn || "";
+      document.getElementById("sbw").textContent = m.sbw || "";
+
+      // Signals
+      document.getElementById("signalLvl").textContent = m.signal_lvl || "";
+      document.getElementById("signalBar").style.width = ((Number(m.signal_lvl) || 0) / 5 * 100) + "%";
+      document.getElementById("rsrp").textContent = m.rsrp || "";
+      document.getElementById("rsrpBar").style.width = Math.max(0, Math.min(100, (140 + Number(m.rsrp || -140)) / 140 * 100)) + "%";
+      document.getElementById("rssi").textContent = m.rssi || "";
+      document.getElementById("rssiBar").style.width = Math.max(0, Math.min(100, (140 + Number(m.rssi || -140)) / 140 * 100)) + "%";
+      document.getElementById("rsrq").textContent = m.rsrq || "";
+      document.getElementById("rsrqBar").style.width = Math.max(0, Math.min(100, (20 + Number(m.rsrq || -20)) / 20 * 100)) + "%";
+      document.getElementById("sinr").textContent = m.sinr || "";
+      document.getElementById("sinrBar").style.width = Math.max(0, Math.min(100, (Number(m.sinr || 0)/ 30 * 100))) + "%";
+      // CA
+      document.getElementById("caRsrp").textContent = m.ca_rsrp || "";
+      document.getElementById("caRsrpBar").style.width = Math.max(0, Math.min(100, (140 + Number(m.ca_rsrp || -140)) / 140 * 100)) + "%";
+      document.getElementById("caRsrq").textContent = m.ca_rsrq || "";
+      document.getElementById("caRsrqBar").style.width = Math.max(0, Math.min(100, (20 + Number(m.ca_rsrq || -20)) / 20 * 100)) + "%";
+      document.getElementById("caRssi").textContent = m.ca_rssi || "";
+      document.getElementById("caRssiBar").style.width = Math.max(0, Math.min(100, (140 + Number(m.ca_rssi || -140)) / 140 * 100)) + "%";
+      document.getElementById("caCinr").textContent = m.ca_cinr || "";
+      document.getElementById("caCinrBar").style.width = Math.max(0, Math.min(100, (Number(m.ca_cinr || 0)/ 30 * 100))) + "%";
+      // Coding & Quality
+      document.getElementById("cqi").textContent = m.cqi || "";
+      document.getElementById("cqiBar").style.width = Math.max(0, Math.min(100, (Number(m.cqi || 0)/ 15 * 100))) + "%";
+      document.getElementById("mcs").textContent = m.mcs || "";
+      document.getElementById("mcsBar").style.width = Math.max(0, Math.min(100, (Number(m.mcs || 0)/ 30 * 100))) + "%";
+      document.getElementById("rank").textContent = m.rank || "";
+      document.getElementById("rankBar").style.width = Math.max(0, Math.min(100, (Number(m.rank || 0)/ 2 * 100))) + "%";
+
+      // Raw
+      document.getElementById("networkTypeNum").textContent = m.network_type_num || "";
+      document.getElementById("activeChannel").textContent = m.active_channel || "";
+      document.getElementById("lacId").textContent = m.lac_id || "";
+      document.getElementById("pscsStatus").textContent = m.ps_cs_status || "";
+      document.getElementById("act").textContent = m.act || "";
+      document.getElementById("ipstack").textContent = m.ipstack_current || "";
+      document.getElementById("reg3g").textContent = m["3g_register_status"] || "";
+      document.getElementById("reg2g").textContent = m["2g_register_status"] || "";
+      document.getElementById("gwAllBand").textContent = m.gw_all_band || "";
+      document.getElementById("lteAllBand").textContent = m.lte_all_band || "";
+      document.getElementById("lteLockBand").textContent = m.lte_lock_band || "";
+      document.getElementById("gwLockBand").textContent = m.gw_lock_band || "";
+      document.getElementById("tac").textContent = m.tac || "";
+      document.getElementById("operator").textContent = m.operator || "";
+      document.getElementById("rrcStatus").textContent = m.rrc_status || "";
+
+      // Update last update time
+      document.getElementById("lastUpdate").textContent = "Last update: " + (new Date()).toLocaleTimeString();
+    }
+
+    // Main live polling function
+    async function pollRouterData() {
+      if (!sessionId) {
+        sessionId = await fetchSessionId();
+      }
+      try {
+        const data = await fetchModemData(sessionId);
+        updateDashboard(data);
+      } catch (e) {
+        document.getElementById("lastUpdate").textContent = "Error fetching data";
+      }
+      pollingTimeout = setTimeout(pollRouterData, pollingMs);
+    }
+
+    function restartPolling() {
+      clearTimeout(pollingTimeout);
+      pollRouterData();
+    }
+
+    // Start on load
+    pollRouterData();
+  </script>
+</body>
+</html>
