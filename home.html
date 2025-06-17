@@ -143,11 +143,70 @@
       outline: none;
       box-shadow: 0 1px 4px #1115;
     }
+    .band-change-controls {
+      background: #232733;
+      border-radius: 12px;
+      padding: 14px 20px 9px 20px;
+      margin-bottom: 18px;
+      margin-top: 2px;
+      border: 1px solid #2d313c;
+    }
+    .band-change-controls label {
+      font-size: 15px;
+      color: #4fc3f7;
+      margin-right: 10px;
+      font-weight: bold;
+    }
+    .band-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 18px;
+      margin-bottom: 8px;
+      margin-top: 6px;
+    }
+    .band-checkbox {
+      accent-color: #4fc3f7;
+      width: 16px;
+      height: 16px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .band-btn-group {
+      margin-top: 8px;
+      display: flex;
+      gap: 10px;
+    }
+    .band-btn {
+      background: #4fc3f7;
+      color: #232733;
+      border: none;
+      font-weight: bold;
+      padding: 5px 15px;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+    .band-btn:hover {
+      background: #2196f3;
+      color: #fff;
+    }
+    .band-err {
+      color: #ff5252;
+      font-size: 14px;
+      margin-left: 12px;
+    }
+    .band-success {
+      color: #43e97b;
+      font-size: 14px;
+      margin-left: 12px;
+    }
     @media (max-width: 700px) {
       .flex-row { flex-direction: column;}
       .dashboard { padding: 12px;}
       .last-update { float: none; margin-top: 6px;}
       .polling-controls { text-align: left;}
+      .band-list {flex-direction:column;}
     }
   </style>
 </head>
@@ -158,6 +217,14 @@
       <label for="pollingInterval">OPS (Update/sec):</label>
       <input type="number" min="0.2" max="10" step="0.1" id="pollingInterval" value="0.2" />
       <span style="color:#b0b6c4; font-size:12px;">(Lower value = faster updates)</span>
+    </div>
+    <div class="band-change-controls">
+      <label>Select LTE Bands:</label>
+      <div class="band-list" id="bandList"></div>
+      <div class="band-btn-group">
+        <button class="band-btn" id="applyBandsBtn">Apply Selected Bands</button>
+        <span id="bandMsg"></span>
+      </div>
     </div>
     <div class="section">
       <h2>Carrier Aggregation</h2>
@@ -187,7 +254,7 @@
           <tr><td class="key">PCI</td><td class="value" id="pci"></td></tr>
           <tr><td class="key">Band</td><td class="value" id="band"></td></tr>
           <tr><td class="key">EARFCN</td><td class="value" id="earfcn"></td></tr>
-          <tr><td class="key">Bandwidth</td><td class="value" id="pbw"></td></tr>
+          <tr><td class="key">Primary BW</td><td class="value" id="pbw"></td></tr>
         </table>
       </div>
       <div class="card">
@@ -195,17 +262,17 @@
         <table class="kv-table">
           <tr><td class="key">Cell ID</td><td class="value" id="cellId2"></td></tr>
           <tr><td class="key">eNodeB</td><td class="value" id="enodeb2"></td></tr>
-          <tr><td class="key">PCI</td><td class="value" id="caPci"></td></tr>
-          <tr><td class="key">Band</td><td class="value" id="caBand"></td></tr>
-          <tr><td class="key">EARFCN</td><td class="value" id="caEarfcn"></td></tr>
-          <tr><td class="key">Bandwidth</td><td class="value" id="sbw"></td></tr>
+          <tr><td class="key">CA PCI</td><td class="value" id="caPci"></td></tr>
+          <tr><td class="key">CA Band</td><td class="value" id="caBand"></td></tr>
+          <tr><td class="key">CA EARFCN</td><td class="value" id="caEarfcn"></td></tr>
+          <tr><td class="key">CA BW</td><td class="value" id="sbw"></td></tr>
         </table>
       </div>
     </div>
 
     <div class="section flex-row">
       <div class="card">
-        <h2>Primary Band Signal Strength</h2>
+        <h2>Signal Strength</h2>
         <div class="label">Signal Level: <b id="signalLvl"></b></div>
         <div class="bar-container"><div class="bar signal" id="signalBar"></div></div>
         <div class="label">RSRP: <b id="rsrp"></b></div>
@@ -218,23 +285,23 @@
         <div class="bar-container"><div class="bar sinr" id="sinrBar"></div></div>
       </div>
       <div class="card">
-        <h2>Secondary Band Signal Strength</h2>
+        <h2>Carrier Aggregation Signal</h2>
         <div class="label">CA RSRP: <b id="caRsrp"></b></div>
         <div class="bar-container"><div class="bar ca-rsrp" id="caRsrpBar"></div></div>
-        <div class="label">RSRQ: <b id="caRsrq"></b></div>
+        <div class="label">CA RSRQ: <b id="caRsrq"></b></div>
         <div class="bar-container"><div class="bar ca-rsrq" id="caRsrqBar"></div></div>
-        <div class="label">RSSI: <b id="caRssi"></b></div>
+        <div class="label">CA RSSI: <b id="caRssi"></b></div>
         <div class="bar-container"><div class="bar" id="caRssiBar" style="background:linear-gradient(90deg,#4fc3f7,#00bcd4)"></div></div>
-        <div class="label">CINR: <b id="caCinr"></b></div>
+        <div class="label">CA CINR: <b id="caCinr"></b></div>
         <div class="bar-container"><div class="bar ca-cinr" id="caCinrBar"></div></div>
       </div>
       <div class="card">
-        <h2>Quality</h2>
+        <h2>Quality & Coding</h2>
         <div class="label">CQI: <b id="cqi"></b></div>
         <div class="bar-container"><div class="bar cqi" id="cqiBar"></div></div>
         <div class="label">MCS: <b id="mcs"></b></div>
         <div class="bar-container"><div class="bar mcs" id="mcsBar"></div></div>
-        <div class="label">MIMO Rank: <b id="rank"></b></div>
+        <div class="label">Rank: <b id="rank"></b></div>
         <div class="bar-container"><div class="bar rank" id="rankBar"></div></div>
       </div>
     </div>
@@ -261,6 +328,138 @@
     </div>
   </div>
   <script>
+    // ==== Band Change Feature ====
+    // Supported bands and their router API names
+    const BAND_NAMES = [
+      { id: 1, api: "EUTRAN_BAND1", label: "Band 1" },
+      { id: 3, api: "EUTRAN_BAND3", label: "Band 3" },
+      { id: 5, api: "EUTRAN_BAND5", label: "Band 5" },
+      { id: 38, api: "EUTRAN_BAND38", label: "Band 38" },
+      { id: 41, api: "EUTRAN_BAND41", label: "Band 41" }
+    ];
+
+    // Save current lockband (selection) for auto-ticking
+    let currentLockBands = [];
+
+    // Populate band list for selection and auto-tick
+    function renderBandList(lockband = []) {
+      const el = document.getElementById('bandList');
+      el.innerHTML = "";
+      BAND_NAMES.forEach(b => {
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = 'band-checkbox';
+        cb.value = b.api;
+        cb.id = 'band-cb-' + b.id;
+        if (lockband.includes(b.api)) cb.checked = true;
+        const lb = document.createElement('label');
+        lb.setAttribute('for', cb.id);
+        lb.style.cursor = "pointer";
+        lb.appendChild(cb);
+        lb.appendChild(document.createTextNode(' ' + b.label));
+        el.appendChild(lb);
+      });
+    }
+
+    // Get selected bands
+    function getSelectedBands() {
+      return Array.from(document.querySelectorAll('.band-checkbox:checked')).map(el => el.value);
+    }
+
+    // Display message for band change
+    function setBandMsg(msg, success) {
+      const el = document.getElementById('bandMsg');
+      el.textContent = msg;
+      el.className = success ? 'band-success' : 'band-err';
+    }
+
+    // Band change AJAX
+    async function changeBands(sessionId, bands, cb) {
+      try {
+        setBandMsg("Applying bands...", true);
+        const res = await fetch("http://192.168.1.1/cgi-bin/lua.cgi", {
+          credentials: "omit",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:139.0) Gecko/20100101 Firefox/139.0",
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "Priority": "u=4",
+            "Pragma": "no-cache",
+            "Cache-Control": "no-cache"
+          },
+          referrer: "http://192.168.1.1/band.html",
+          body: JSON.stringify({
+            band: bands,
+            method: "POST",
+            cmd: 166,
+            sessionId: sessionId
+          }),
+          method: "POST",
+          mode: "cors"
+        });
+        const json = await res.json();
+        if (json.success) {
+          setBandMsg("Band change successful!", true);
+          // Also refetch lockband to update UI
+          setTimeout(fetchLockBand, 700); // slight delay to let router apply
+        } else {
+          setBandMsg("Band change failed!", false);
+        }
+        if (cb) cb(json.success);
+      } catch (e) {
+        setBandMsg("Error communicating with router!", false);
+        if (cb) cb(false);
+      }
+    }
+
+    document.getElementById('applyBandsBtn').onclick = function() {
+      const bands = getSelectedBands();
+      if (!bands.length) {
+        setBandMsg("Select at least one band!", false);
+        return;
+      }
+      changeBands(sessionId, bands);
+    };
+
+    // Fetch current lockband and available bands, then auto-tick
+    async function fetchLockBand() {
+      if (!sessionId) return;
+      try {
+        const res = await fetch("http://192.168.1.1/cgi-bin/lua.cgi", {
+          credentials: "omit",
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:139.0) Gecko/20100101 Firefox/139.0",
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.5",
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+            "Priority": "u=4",
+            "Pragma": "no-cache",
+            "Cache-Control": "no-cache"
+          },
+          referrer: "http://192.168.1.1/band.html",
+          body: JSON.stringify({
+            cmd: 165,
+            method: "GET",
+            sessionId: sessionId
+          }),
+          method: "POST",
+          mode: "cors"
+        });
+        const json = await res.json();
+        if (json.success) {
+          currentLockBands = Array.isArray(json.lockband) ? json.lockband : [];
+          renderBandList(currentLockBands);
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // ==== END Band Change Feature ====
+
     // Helper to map service status codes to text
     function getServiceStatusText(code) {
       switch (code) {
@@ -438,6 +637,8 @@
     async function pollRouterData() {
       if (!sessionId) {
         sessionId = await fetchSessionId();
+        // After login, fetch current lockband to auto-tick
+        await fetchLockBand();
       }
       try {
         const data = await fetchModemData(sessionId);
@@ -454,7 +655,11 @@
     }
 
     // Start on load
-    pollRouterData();
+    fetchSessionId().then(sid => {
+      sessionId = sid;
+      fetchLockBand();
+      pollRouterData();
+    });
   </script>
 </body>
 </html>
