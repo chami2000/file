@@ -115,12 +115,6 @@
     .dot-fail { background: #ff5252;}
     .dot-warn { background: #ffb300;}
     .dot-grey { background: #616161;}
-    .last-update {
-      font-size: 12px;
-      color: #b0b6c4;
-      float: right;
-      margin-top: -42px;
-    }
     .polling-controls {
       margin-top: 10px;
       margin-bottom: 10px;
@@ -150,6 +144,7 @@
       margin-bottom: 18px;
       margin-top: 2px;
       border: 1px solid #2d313c;
+      position: relative;
     }
     .band-change-controls label {
       font-size: 15px;
@@ -201,18 +196,111 @@
       font-size: 14px;
       margin-left: 12px;
     }
+    /* ? Button for Band Help */
+    .band-help-btn {
+      background: #313b50;
+      color: #4fc3f7;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 20px;
+      font-weight: bold;
+      margin-left: 6px;
+      cursor: pointer;
+      vertical-align: middle;
+      transition: background 0.2s, color 0.2s;
+      box-shadow: 0 1px 4px #111a;
+    }
+    .band-help-btn:hover {
+      background: #4fc3f7;
+      color: #232733;
+    }
+    /* Modal for Supported Band Combinations */
+    .modal-band-help {
+      display: none;
+      position: fixed;
+      z-index: 9999;
+      left: 0; top: 0; width: 100vw; height: 100vh;
+      background: rgba(18,22,34,0.96);
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.2s;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal-band-help-content {
+      background: #242b3a;
+      border-radius: 18px;
+      padding: 32px 36px 28px 36px;
+      max-width: 440px;
+      min-width: 280px;
+      box-shadow: 0 6px 32px #0009;
+      color: #f3f7fa;
+      text-align: center;
+      position: relative;
+    }
+    .modal-band-help-content h3 {
+      margin-top: 0;
+      color: #4fc3f7;
+      letter-spacing: 1px;
+      font-size: 1.3em;
+    }
+    .modal-band-help-content .close-btn {
+      position: absolute;
+      top: 14px; right: 20px;
+      background: none;
+      border: none;
+      font-size: 1.7em;
+      color: #666;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .modal-band-help-content .close-btn:hover {
+      color: #ff5252;
+    }
+    .band-combo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-top: 17px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+    .combo-chip {
+      display: inline-block;
+      background: linear-gradient(90deg, #4fc3f7 60%, #a0e060 100%);
+      color: #232733;
+      border-radius: 18px;
+      padding: 7px 18px;
+      font-weight: 600;
+      font-size: 1.13em;
+      margin: 0 2px;
+      box-shadow: 0 2px 10px #0003;
+      letter-spacing: 1px;
+    }
+    .combo-arrows {
+      font-size: 1.2em;
+      margin: 0 6px;
+      color: #90caf9;
+      vertical-align: middle;
+    }
+    .combo-desc {
+      font-size: 0.94em;
+      color: #c0d2f7;
+      margin-top: 3px;
+    }
     @media (max-width: 700px) {
       .flex-row { flex-direction: column;}
       .dashboard { padding: 12px;}
-      .last-update { float: none; margin-top: 6px;}
       .polling-controls { text-align: left;}
       .band-list {flex-direction:column;}
+      .modal-band-help-content { padding: 18px 4vw 12px 4vw;}
     }
   </style>
 </head>
 <body>
   <div class="dashboard">
-    <h1>🌐 OpenWRT LTE Router Dashboard <span class="last-update" id="lastUpdate">Updating...</span></h1>
+    <h1>🌐 OpenWRT LTE Router Dashboard</h1>
     <div class="polling-controls">
       <label for="pollingInterval">OPS (Update/sec):</label>
       <input type="number" min="0.2" max="10" step="0.1" id="pollingInterval" value="0.2" />
@@ -220,19 +308,73 @@
     </div>
     <div class="band-change-controls">
       <label>Select LTE Bands:</label>
+      <button class="band-help-btn" id="bandHelpBtn" title="Supported band combinations">?</button>
       <div class="band-list" id="bandList"></div>
       <div class="band-btn-group">
         <button class="band-btn" id="applyBandsBtn">Apply Selected Bands</button>
         <span id="bandMsg"></span>
       </div>
     </div>
-    <div class="section">
-      <h2>Carrier Aggregation</h2>
-      <span class="label">CA Active Status:</span>
-      <span id="caActiveDot" class="status-dot dot-grey"></span>
-      <span id="caActiveText" style="font-weight:bold;color:#b0b6c4;">Loading...</span>
+    <!-- Modal for band help -->
+    <div class="modal-band-help" id="modalBandHelp">
+      <div class="modal-band-help-content">
+        <button class="close-btn" id="modalBandHelpClose" title="Close">&times;</button>
+        <h3>Supported Band Combinations</h3>
+        <div class="band-combo-list">
+          <div>
+            <span class="combo-chip">Band 1</span>
+            <span class="combo-arrows">&#8596;</span>
+            <span class="combo-chip">Band 1</span>
+            <div class="combo-desc">Standard 2x Band 1 aggregation</div>
+          </div>
+          <div>
+            <span class="combo-chip">Band 1</span>
+            <span class="combo-arrows">&#8596;</span>
+            <span class="combo-chip">Band 5</span>
+            <div class="combo-desc">Mix urban (1) and rural (5) coverage</div>
+          </div>
+          <div>
+            <span class="combo-chip">Band 3</span>
+            <span class="combo-arrows">&#8596;</span>
+            <span class="combo-chip">Band 3</span>
+            <div class="combo-desc">Maximum throughput with Band 3</div>
+          </div>
+          <div>
+            <span class="combo-chip">Band 3</span>
+            <span class="combo-arrows">&#8596;</span>
+            <span class="combo-chip">Band 5</span>
+            <div class="combo-desc">Urban + rural: Band 3 and 5</div>
+          </div>
+          <div>
+            <span class="combo-chip">Band 3</span>
+            <span class="combo-arrows">&#8596;</span>
+            <span class="combo-chip">Band 38</span>
+            <div class="combo-desc">TDD+FDD aggregation (3 + 38)</div>
+          </div>
+          <div>
+            <span class="combo-chip">Band 3</span>
+            <span class="combo-arrows">&#8596;</span>
+            <span class="combo-chip">Band 41</span>
+            <div class="combo-desc">Performance boost via Band 41</div>
+          </div>
+          <div>
+            <span class="combo-chip">Band 5</span>
+            <span class="combo-arrows">&#8596;</span>
+            <span class="combo-chip">Band 5</span>
+            <div class="combo-desc">Rural coverage: 2x Band 5</div>
+          </div>
+          <div>
+            <span class="combo-chip">Band 41</span>
+            <span class="combo-arrows">&#8596;</span>
+            <span class="combo-chip">Band 41</span>
+            <div class="combo-desc">Extra capacity: 2x Band 41</div>
+          </div>
+        </div>
+        <div style="margin-top:14px; color:#a0a0a0; font-size:0.95em;">
+          <b>Tip:</b> Choose two bands according to your network and area for optimal Carrier Aggregation.
+        </div>
+      </div>
     </div>
-
     <div class="section flex-row">
       <div class="card">
         <h2>Modem & Network</h2>
@@ -243,7 +385,6 @@
           <tr><td class="key">4G Registered</td><td class="value" id="reg4g"></td></tr>
           <tr><td class="key">Roaming</td><td class="value" id="roaming"></td></tr>
           <tr><td class="key">Service Status</td><td class="value" id="svcStatus"></td></tr>
-          <tr><td class="key">Link Status</td><td class="value" id="linkStatus"></td></tr>
         </table>
       </div>
       <div class="card">
@@ -255,6 +396,10 @@
           <tr><td class="key">Band</td><td class="value" id="band"></td></tr>
           <tr><td class="key">EARFCN</td><td class="value" id="earfcn"></td></tr>
           <tr><td class="key">Primary BW</td><td class="value" id="pbw"></td></tr>
+          <tr>
+            <td class="key">Link Status</td>
+            <td class="value" id="linkStatus"></td>
+          </tr>
         </table>
       </div>
       <div class="card">
@@ -266,10 +411,16 @@
           <tr><td class="key">CA Band</td><td class="value" id="caBand"></td></tr>
           <tr><td class="key">CA EARFCN</td><td class="value" id="caEarfcn"></td></tr>
           <tr><td class="key">CA BW</td><td class="value" id="sbw"></td></tr>
+          <tr>
+            <td class="key">CA Active Status</td>
+            <td class="value">
+              <span id="caActiveDot" class="status-dot dot-grey"></span>
+              <span id="caActiveText" style="font-weight:bold;color:#b0b6c4;">Loading...</span>
+            </td>
+          </tr>
         </table>
       </div>
     </div>
-
     <div class="section flex-row">
       <div class="card">
         <h2>Signal Strength</h2>
@@ -305,7 +456,6 @@
         <div class="bar-container"><div class="bar rank" id="rankBar"></div></div>
       </div>
     </div>
-
     <div class="section">
       <h2>Raw Data & Status</h2>
       <table class="kv-table">
@@ -329,7 +479,6 @@
   </div>
   <script>
     // ==== Band Change Feature ====
-    // Supported bands and their router API names
     const BAND_NAMES = [
       { id: 1, api: "EUTRAN_BAND1", label: "Band 1" },
       { id: 3, api: "EUTRAN_BAND3", label: "Band 3" },
@@ -337,11 +486,7 @@
       { id: 38, api: "EUTRAN_BAND38", label: "Band 38" },
       { id: 41, api: "EUTRAN_BAND41", label: "Band 41" }
     ];
-
-    // Save current lockband (selection) for auto-ticking
     let currentLockBands = [];
-
-    // Populate band list for selection and auto-tick
     function renderBandList(lockband = []) {
       const el = document.getElementById('bandList');
       el.innerHTML = "";
@@ -360,20 +505,14 @@
         el.appendChild(lb);
       });
     }
-
-    // Get selected bands
     function getSelectedBands() {
       return Array.from(document.querySelectorAll('.band-checkbox:checked')).map(el => el.value);
     }
-
-    // Display message for band change
     function setBandMsg(msg, success) {
       const el = document.getElementById('bandMsg');
       el.textContent = msg;
       el.className = success ? 'band-success' : 'band-err';
     }
-
-    // Band change AJAX
     async function changeBands(sessionId, bands, cb) {
       try {
         setBandMsg("Applying bands...", true);
@@ -402,8 +541,7 @@
         const json = await res.json();
         if (json.success) {
           setBandMsg("Band change successful!", true);
-          // Also refetch lockband to update UI
-          setTimeout(fetchLockBand, 700); // slight delay to let router apply
+          setTimeout(fetchLockBand, 700);
         } else {
           setBandMsg("Band change failed!", false);
         }
@@ -413,7 +551,6 @@
         if (cb) cb(false);
       }
     }
-
     document.getElementById('applyBandsBtn').onclick = function() {
       const bands = getSelectedBands();
       if (!bands.length) {
@@ -422,8 +559,6 @@
       }
       changeBands(sessionId, bands);
     };
-
-    // Fetch current lockband and available bands, then auto-tick
     async function fetchLockBand() {
       if (!sessionId) return;
       try {
@@ -453,14 +588,9 @@
           currentLockBands = Array.isArray(json.lockband) ? json.lockband : [];
           renderBandList(currentLockBands);
         }
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     }
-
     // ==== END Band Change Feature ====
-
-    // Helper to map service status codes to text
     function getServiceStatusText(code) {
       switch (code) {
         case "2": return '<span class="badge">Connected</span>';
@@ -468,22 +598,15 @@
         default: return '<span class="badge" style="color:#ff5252;">Disconnected</span>';
       }
     }
-
-    // Helper to show dot status
     function setDot(dotEl, active) {
       dotEl.classList.remove('dot-success', 'dot-fail', 'dot-grey');
       dotEl.classList.add(active ? 'dot-success' : 'dot-fail');
     }
-
-    // Login credentials (change for your router)
     const USERNAME = "sztozed";
     const PASSWORD = "e9665026ee2fd58788d7659e190a2e3e";
-
-    // Session state
     let sessionId = null;
     let pollingTimeout = null;
-    let pollingMs = 200; // default 0.2s (5 ops)
-
+    let pollingMs = 200;
     document.getElementById('pollingInterval').addEventListener('change', function() {
       let ops = parseFloat(this.value);
       if (isNaN(ops) || ops < 0.2) ops = 0.2;
@@ -492,8 +615,6 @@
       this.value = ops.toFixed(2);
       restartPolling();
     });
-
-    // Login and retrieve sessionId
     async function fetchSessionId() {
       const res = await fetch("http://192.168.1.1/cgi-bin/lua.cgi", {
         credentials: "omit",
@@ -521,8 +642,6 @@
       const data = await res.json();
       return data.sessionId;
     }
-
-    // Fetch modem data using current sessionId
     async function fetchModemData(sessionId) {
       const res = await fetch("http://192.168.1.1/cgi-bin/lua.cgi", {
         credentials: "omit",
@@ -547,8 +666,6 @@
       const json = await res.json();
       return json.data;
     }
-
-    // Update all dashboard elements with modem data
     function updateDashboard(data) {
       // CA
       const caActive = data.caModem?.ca_activ_status === 1 || data.caModem?.ca_activ_status === "1";
@@ -566,25 +683,18 @@
       document.getElementById("linkStatus").innerHTML = (m.network_link_stauts === 1 || m.network_link_stauts === "1")
         ? '<span class="status-dot dot-success"></span>Connected'
         : '<span class="status-dot dot-fail"></span>Disconnected';
-
-      // Primary Band Box
       document.getElementById("cellId").textContent = m.cell_id || "";
       document.getElementById("enodeb").textContent = m.enodebid || "";
       document.getElementById("pci").textContent = m.pci || "";
       document.getElementById("band").textContent = m.band || "";
       document.getElementById("earfcn").textContent = m.earfcn || "";
       document.getElementById("pbw").textContent = m.pbw || "";
-
-      // Secondary Band Box
-      // For eNodeB and CellID, use the same as primary (unless you have CA-specific fields)
       document.getElementById("cellId2").textContent = m.cell_id || "";
       document.getElementById("enodeb2").textContent = m.enodebid || "";
       document.getElementById("caPci").textContent = m.ca_pci || "";
       document.getElementById("caBand").textContent = m.sband || "";
       document.getElementById("caEarfcn").textContent = m.ca_earfcn || "";
       document.getElementById("sbw").textContent = m.sbw || "";
-
-      // Signals
       document.getElementById("signalLvl").textContent = m.signal_lvl || "";
       document.getElementById("signalBar").style.width = ((Number(m.signal_lvl) || 0) / 5 * 100) + "%";
       document.getElementById("rsrp").textContent = m.rsrp || "";
@@ -595,7 +705,6 @@
       document.getElementById("rsrqBar").style.width = Math.max(0, Math.min(100, (20 + Number(m.rsrq || -20)) / 20 * 100)) + "%";
       document.getElementById("sinr").textContent = m.sinr || "";
       document.getElementById("sinrBar").style.width = Math.max(0, Math.min(100, (Number(m.sinr || 0)/ 30 * 100))) + "%";
-      // CA
       document.getElementById("caRsrp").textContent = m.ca_rsrp || "";
       document.getElementById("caRsrpBar").style.width = Math.max(0, Math.min(100, (140 + Number(m.ca_rsrp || -140)) / 140 * 100)) + "%";
       document.getElementById("caRsrq").textContent = m.ca_rsrq || "";
@@ -604,15 +713,12 @@
       document.getElementById("caRssiBar").style.width = Math.max(0, Math.min(100, (140 + Number(m.ca_rssi || -140)) / 140 * 100)) + "%";
       document.getElementById("caCinr").textContent = m.ca_cinr || "";
       document.getElementById("caCinrBar").style.width = Math.max(0, Math.min(100, (Number(m.ca_cinr || 0)/ 30 * 100))) + "%";
-      // Coding & Quality
       document.getElementById("cqi").textContent = m.cqi || "";
       document.getElementById("cqiBar").style.width = Math.max(0, Math.min(100, (Number(m.cqi || 0)/ 15 * 100))) + "%";
       document.getElementById("mcs").textContent = m.mcs || "";
       document.getElementById("mcsBar").style.width = Math.max(0, Math.min(100, (Number(m.mcs || 0)/ 30 * 100))) + "%";
       document.getElementById("rank").textContent = m.rank || "";
       document.getElementById("rankBar").style.width = Math.max(0, Math.min(100, (Number(m.rank || 0)/ 2 * 100))) + "%";
-
-      // Raw
       document.getElementById("networkTypeNum").textContent = m.network_type_num || "";
       document.getElementById("activeChannel").textContent = m.active_channel || "";
       document.getElementById("lacId").textContent = m.lac_id || "";
@@ -628,38 +734,39 @@
       document.getElementById("tac").textContent = m.tac || "";
       document.getElementById("operator").textContent = m.operator || "";
       document.getElementById("rrcStatus").textContent = m.rrc_status || "";
-
-      // Update last update time
-      document.getElementById("lastUpdate").textContent = "Last update: " + (new Date()).toLocaleTimeString();
     }
-
-    // Main live polling function
     async function pollRouterData() {
       if (!sessionId) {
         sessionId = await fetchSessionId();
-        // After login, fetch current lockband to auto-tick
         await fetchLockBand();
       }
       try {
         const data = await fetchModemData(sessionId);
         updateDashboard(data);
-      } catch (e) {
-        document.getElementById("lastUpdate").textContent = "Error fetching data";
-      }
+      } catch (e) {}
       pollingTimeout = setTimeout(pollRouterData, pollingMs);
     }
-
     function restartPolling() {
       clearTimeout(pollingTimeout);
       pollRouterData();
     }
-
-    // Start on load
     fetchSessionId().then(sid => {
       sessionId = sid;
       fetchLockBand();
       pollRouterData();
     });
+
+    // Modal for Supported Band Combinations
+    document.getElementById('bandHelpBtn').onclick = function() {
+      document.getElementById('modalBandHelp').style.display = "flex";
+    };
+    document.getElementById('modalBandHelpClose').onclick = function() {
+      document.getElementById('modalBandHelp').style.display = "none";
+    };
+    // Also close modal on outside click
+    document.getElementById('modalBandHelp').onclick = function(e) {
+      if (e.target === this) this.style.display = "none";
+    };
   </script>
 </body>
 </html>
