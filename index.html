@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>My Timetable</title>
+<meta name="theme-color" content="#12100e">
+<meta name="description" content="Weekly class timetable — works offline">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Timetable">
+<style>
+  :root{
+    --bg:#12100e;
+    --panel:#1b1815;
+    --panel-2:#211d19;
+    --line:#332e29;
+    --text:#f2ede6;
+    --muted:#a99f92;
+    --muted-2:#786e63;
+    --radius:16px;
+
+    /* one colour per subject */
+    --c-eds:#5b8def;   /* Essential Digital Skills */
+    --c-mfc:#a78bfa;   /* Mathematics for Computing */
+    --c-ecs:#2dd4bf;   /* Essential Communication Skills - Advanced */
+    --c-ct:#f5b942;    /* Computational Thinking */
+    --c-eas:#f472b6;   /* Essential Academic Skills */
+    --c-free:#4a443d;  /* Free slot */
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #1c1712 0%, transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, #171a1c 0%, transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Segoe UI', ui-sans-serif, system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    padding-bottom:env(safe-area-inset-bottom);
+    min-height:100%;
+  }
+
+  header{
+    position:sticky; top:0; z-index:20;
+    padding:18px 20px 14px;
+    background:linear-gradient(180deg, rgba(18,16,14,0.97) 70%, rgba(18,16,14,0));
+    backdrop-filter:blur(6px);
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+  }
+  .brand{display:flex; align-items:center; gap:10px;}
+  .brand .mark{
+    width:34px; height:34px; border-radius:10px;
+    background:linear-gradient(135deg, var(--c-ct), var(--c-eds));
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:15px; color:#12100e; flex-shrink:0;
+  }
+  .brand h1{font-size:17px; margin:0; letter-spacing:.2px;}
+  .brand p{margin:0; font-size:11.5px; color:var(--muted);}
+
+  #install-btn{
+    display:none;
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:var(--text);
+    font-size:12.5px;
+    padding:8px 12px;
+    border-radius:999px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  #install-btn:active{transform:scale(.97);}
+
+  main{padding:6px 16px 40px; max-width:1300px; margin:0 auto;}
+
+  /* ---------- View toggle (mobile: Day / Week) ---------- */
+  .view-toggle{
+    display:none;
+    gap:6px;
+    padding:2px;
+    margin:4px 0 12px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:999px;
+    width:fit-content;
+  }
+  .view-toggle button{
+    border:none;
+    background:transparent;
+    color:var(--muted);
+    font-size:12.5px;
+    font-weight:700;
+    padding:7px 16px;
+    border-radius:999px;
+    cursor:pointer;
+  }
+  .view-toggle button.active{
+    background:var(--text);
+    color:#141210;
+  }
+
+  /* ---------- Day tabs (mobile) ---------- */
+  .day-tabs{
+    display:flex; gap:6px; overflow-x:auto; padding:6px 0 14px;
+    scrollbar-width:none;
+  }
+  .day-tabs::-webkit-scrollbar{display:none;}
+  .day-tabs button{
+    flex:0 0 auto;
+    padding:9px 16px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:var(--muted);
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex; align-items:center; gap:6px;
+  }
+  .day-tabs button.active{
+    background:var(--text);
+    color:#141210;
+    border-color:var(--text);
+  }
+  /* ---------- Today / Now indicators ---------- */
+  .today-dot{
+    width:6px; height:6px; border-radius:50%;
+    background:#4ade80; flex-shrink:0;
+    box-shadow:0 0 0 3px rgba(74,222,128,0.22);
+  }
+  .day-tabs button:not(.active) .today-dot{box-shadow:0 0 0 3px rgba(74,222,128,0.35);}
+  .day-head.is-today{border-color:#4ade80; box-shadow:inset 0 0 0 1px rgba(74,222,128,0.35);}
+  .day-head .today-dot{margin-left:2px;}
+  .card.is-now{
+    border-color:color-mix(in srgb, var(--subject-color, #4ade80) 60%, #4ade80 40%);
+    box-shadow:0 0 0 1px color-mix(in srgb, var(--subject-color, #4ade80) 35%, transparent), 0 0 18px -6px var(--subject-color, #4ade80);
+  }
+  .card .now-dot{
+    position:absolute; top:12px; right:12px;
+    width:8px; height:8px; border-radius:50%;
+    background:#4ade80;
+    box-shadow:0 0 0 4px rgba(74,222,128,0.22);
+    animation:pulse 1.8s ease-in-out infinite;
+  }
+  .card.free .now-dot{top:10px; right:10px;}
+  @keyframes pulse{
+    0%,100%{opacity:1; transform:scale(1);}
+    50%{opacity:.55; transform:scale(1.15);}
+  }
+  .now-label{
+    position:absolute; top:11px; right:26px;
+    font-size:9.5px; font-weight:800; letter-spacing:.5px;
+    color:#4ade80; text-transform:uppercase;
+  }
+
+  /* ---------- Grid (desktop) ---------- */
+  .grid{display:none;}
+  .grid-wrap{overflow-x:auto;}
+  .grid{
+    display:grid;
+    grid-template-columns:110px repeat(5, minmax(190px,1fr));
+    gap:12px;
+    min-width:1020px;
+  }
+  .corner, .day-head{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 10px;
+    text-align:center;
+  }
+  .day-head{display:flex; align-items:center; justify-content:center; gap:8px; font-weight:700; font-size:13.5px; letter-spacing:.4px;}
+  .time-cell{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 8px;
+    text-align:center;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    color:var(--muted);
+    font-size:12.5px;
+    font-weight:600;
+  }
+  .time-cell .clock{font-size:16px;}
+
+  /* ---------- Cards (shared) ---------- */
+  .card{
+    position:relative;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-left:4px solid var(--subject-color, var(--line));
+    border-radius:14px;
+    padding:14px 14px 12px;
+    display:flex; flex-direction:column; gap:8px;
+    min-height:118px;
+  }
+  .card.free{
+    border-left:4px dashed var(--c-free);
+    background:repeating-linear-gradient(135deg, var(--panel) 0 10px, var(--panel-2) 10px 20px);
+    align-items:center; justify-content:center; text-align:center;
+    color:var(--muted-2);
+    min-height:96px;
+    border-style:dashed;
+  }
+  .card.free .free-label{font-size:13px; font-weight:600;}
+  .card.free .free-sub{font-size:11px; margin-top:2px;}
+
+  .card h3{margin:0; font-size:14.5px; line-height:1.28; font-weight:700; padding-right:14px;}
+  .badge{
+    align-self:flex-start;
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.4px;
+    padding:3px 9px;
+    border-radius:999px;
+    background:color-mix(in srgb, var(--subject-color) 22%, transparent);
+    color:var(--subject-color);
+    text-transform:uppercase;
+  }
+  .teacher, .room{
+    display:flex; align-items:center; gap:6px;
+    font-size:12px; color:var(--muted);
+  }
+  .room{color:#e7b4a6;}
+  .icon{width:14px; height:14px; flex-shrink:0; opacity:.9;}
+
+  /* mobile list */
+  .day-panel{display:none; flex-direction:column; gap:12px;}
+  .day-panel.active{display:flex;}
+  .day-panel .time-label{
+    display:flex; align-items:center; gap:8px;
+    color:var(--muted); font-size:12px; font-weight:700; letter-spacing:.3px;
+    margin:6px 2px 0;
+  }
+
+  /* ---------- Legend ---------- */
+  .legend{
+    margin-top:26px;
+    display:flex; flex-wrap:wrap; gap:10px 18px;
+    padding:14px 16px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:14px;
+  }
+  .legend .item{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--muted);}
+  .legend .dot{width:11px; height:11px; border-radius:4px; flex-shrink:0;}
+
+  footer{
+    text-align:center; color:var(--muted-2); font-size:11px; padding:24px 16px 10px;
+  }
+
+  /* Show grid on wider screens, hide tabs/list/toggle */
+  @media (min-width:900px){
+    .view-toggle{display:none !important;}
+    .day-tabs{display:none;}
+    .day-panel{display:none !important;}
+    .grid{display:grid;}
+    .grid-wrap{display:block;}
+  }
+
+  /* On mobile: toggle between Day view and full Week grid */
+  @media (max-width:899px){
+    .view-toggle{display:flex;}
+    .grid-wrap{display:none;}
+    body[data-view="week"] .day-tabs,
+    body[data-view="week"] .day-panel{display:none !important;}
+    body[data-view="week"] .grid-wrap{display:block;}
+    body[data-view="week"] .grid-wrap{padding-bottom:6px;}
+  }
+
+  ::selection{background:var(--c-mfc); color:#141210;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="mark">TT</div>
+    <div>
+      <h1>My Timetable</h1>
+      <p>Tap a day to view · installed apps work offline</p>
+    </div>
+  </div>
+  <button id="install-btn">Install App</button>
+</header>
+
+<main>
+
+  <!-- Mobile view switcher -->
+  <div class="view-toggle" id="viewToggle">
+    <button data-view="day" class="active">Day</button>
+    <button data-view="week">Full Week</button>
+  </div>
+
+  <!-- Mobile day tabs -->
+  <div class="day-tabs" id="dayTabs"></div>
+  <div id="dayPanels"></div>
+
+  <!-- Desktop grid -->
+  <div class="grid-wrap">
+    <div class="grid" id="gridView"></div>
+  </div>
+
+  <div class="legend" id="legend"></div>
+
+</main>
+
+<footer>Works fully offline once installed · your schedule, always on hand</footer>
+
+<script>
+// ---------- Data ----------
+const SUBJECT_COLORS = {
+  "Essential Digital Skills": "var(--c-eds)",
+  "Mathematics for Computing": "var(--c-mfc)",
+  "Essential Communication Skills - Advanced": "var(--c-ecs)",
+  "Computational Thinking": "var(--c-ct)",
+  "Essential Academic Skills": "var(--c-eas)"
+};
+
+const TIMES = ["08:30 AM – 10:30 AM", "10:30 AM – 12:30 PM", "01:30 PM – 03:30 PM", "03:30 PM – 05:30 PM"];
+
+const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+
+const SCHEDULE = {
+  Monday: [
+    { subject:"Essential Digital Skills", type:"Lecture", teacher:"Mr Razeen Ramzy & Ms. Imali Jayasekera", room:"1LA" },
+    { subject:"Computational Thinking", type:"Lecture", teacher:"Ms. Tharushi Amarasinghe", room:"5LA" },
+    null,
+    null
+  ],
+  Tuesday: [
+    { subject:"Mathematics for Computing", type:"Lecture", teacher:"Mr. Namal Malalasena", room:"5LA" },
+    { subject:"Essential Academic Skills", type:"Lecture", teacher:"Ms. Antoinette Hettiarachy", room:"5LA" },
+    { subject:"Mathematics for Computing", type:"Tutorial", teacher:"Ms Nadishika Pathirage", room:"0LA" },
+    null
+  ],
+  Wednesday: [
+    { subject:"Essential Communication Skills - Advanced", type:"Lecture", teacher:"Ms Nimesha Amarasooriya", room:"5LB" },
+    { subject:"Mathematics for Computing", type:"Tutorial", teacher:"Ms Nadishika Pathirage", room:"0LA" },
+    { subject:"Essential Digital Skills", type:"Tutorial", teacher:"Ms Nadishika Pathirage", room:"LAB 3" },
+    null
+  ],
+  Thursday: [
+    { subject:"Essential Digital Skills", type:"Tutorial", teacher:"Ms Nadishika Pathirage", room:"1LA" },
+    { subject:"Essential Communication Skills - Advanced", type:"Tutorial", teacher:"Ms. Michaela Peiris", room:"LAB 4" },
+    { subject:"Essential Academic Skills", type:"Tutorial", teacher:"Ms. Antoinette Hettiarachy", room:"5LA" },
+    null
+  ],
+  Friday: [
+    { subject:"Essential Communication Skills - Advanced", type:"Tutorial", teacher:"Ms. Michaela Peiris", room:"5LA" },
+    { subject:"Computational Thinking", type:"Tutorial", teacher:"Ms Anupama Balasooriya", room:"3LC" },
+    { subject:"Essential Academic Skills", type:"Tutorial", teacher:"Ms. Antoinette Hettiarachy", room:"0LA" },
+    null
+  ]
+};
+
+const personIcon = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>`;
+const pinIcon = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>`;
+const clockIcon = `<svg class="icon clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`;
+
+// ---------- "Now" detection ----------
+// Slot minute ranges (24h), matching TIMES order
+const SLOT_RANGES = [
+  [8*60+30, 10*60+30],
+  [10*60+30, 12*60+30],
+  [13*60+30, 15*60+30],
+  [15*60+30, 17*60+30]
+];
+const DOW_TO_DAYIDX = {1:0, 2:1, 3:2, 4:3, 5:4}; // JS getDay(): Mon..Fri -> 0..4
+
+function getNowInfo(){
+  const now = new Date();
+  const dayIdx = DOW_TO_DAYIDX[now.getDay()];
+  const minutes = now.getHours()*60 + now.getMinutes();
+  let slotIdx = -1;
+  if(dayIdx !== undefined){
+    slotIdx = SLOT_RANGES.findIndex(([s,e]) => minutes >= s && minutes < e);
+  }
+  return { dayIdx, slotIdx };
+}
+
+function cardHTML(slot, dayIdx, rowIdx){
+  const attrs = `data-day="${dayIdx}" data-slot="${rowIdx}"`;
+  if(!slot){
+    return `<div class="card free" ${attrs}>
+      <div class="free-label">✦ Free Slot</div>
+      <div class="free-sub">Time to breathe</div>
+    </div>`;
+  }
+  const color = SUBJECT_COLORS[slot.subject] || "var(--c-free)";
+  return `<div class="card" style="--subject-color:${color}" ${attrs}>
+    <h3>${slot.subject}</h3>
+    <span class="badge">${slot.type}</span>
+    <div class="teacher">${personIcon}<span>${slot.teacher}</span></div>
+    <div class="room">${pinIcon}<span>Room: ${slot.room}</span></div>
+  </div>`;
+}
+
+// ---------- Build desktop grid ----------
+function buildGrid(){
+  const grid = document.getElementById('gridView');
+  let html = `<div class="corner">TIME</div>`;
+  DAYS.forEach((d, i) => html += `<div class="day-head" data-day="${i}">${d.toUpperCase()}</div>`);
+
+  TIMES.forEach((t, rowIdx) => {
+    const [start,end] = t.split(" – ");
+    html += `<div class="time-cell">${clockIcon}<span>${start}</span><span style="opacity:.6">–</span><span>${end}</span></div>`;
+    DAYS.forEach((day, dayIdx) => {
+      html += cardHTML(SCHEDULE[day][rowIdx], dayIdx, rowIdx);
+    });
+  });
+  grid.innerHTML = html;
+}
+
+// ---------- Build mobile tabs + panels ----------
+function buildMobile(){
+  const tabsEl = document.getElementById('dayTabs');
+  const panelsEl = document.getElementById('dayPanels');
+  const today = new Date().getDay(); // 0 Sun ... 6 Sat
+  const defaultIdx = DOW_TO_DAYIDX[today] !== undefined ? DOW_TO_DAYIDX[today] : 0;
+
+  let tabsHtml = '';
+  let panelsHtml = '';
+  DAYS.forEach((day, i) => {
+    tabsHtml += `<button class="${i===defaultIdx?'active':''}" data-idx="${i}">${day}</button>`;
+    let rows = '';
+    TIMES.forEach((t, rowIdx) => {
+      rows += `<div class="time-label">${clockIcon}${t}</div>${cardHTML(SCHEDULE[day][rowIdx], i, rowIdx)}`;
+    });
+    panelsHtml += `<div class="day-panel ${i===defaultIdx?'active':''}" data-idx="${i}">${rows}</div>`;
+  });
+  tabsEl.innerHTML = tabsHtml;
+  panelsEl.innerHTML = panelsHtml;
+
+  tabsEl.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabsEl.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      panelsEl.querySelectorAll('.day-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      panelsEl.querySelector(`.day-panel[data-idx="${btn.dataset.idx}"]`).classList.add('active');
+    });
+  });
+}
+
+// ---------- Legend ----------
+function buildLegend(){
+  const legend = document.getElementById('legend');
+  let html = '';
+  Object.entries(SUBJECT_COLORS).forEach(([name, color]) => {
+    html += `<div class="item"><span class="dot" style="background:${color}"></span>${name}</div>`;
+  });
+  html += `<div class="item"><span class="dot" style="background:var(--c-free); opacity:.6"></span>Free Slot</div>`;
+  legend.innerHTML = html;
+}
+
+// ---------- Apply today / now indicators (re-runs every minute) ----------
+function refreshNowIndicators(){
+  const { dayIdx, slotIdx } = getNowInfo();
+
+  // clear previous marks
+  document.querySelectorAll('.today-dot').forEach(el => el.remove());
+  document.querySelectorAll('.now-dot').forEach(el => el.remove());
+  document.querySelectorAll('.now-label').forEach(el => el.remove());
+  document.querySelectorAll('.is-today').forEach(el => el.classList.remove('is-today'));
+  document.querySelectorAll('.is-now').forEach(el => el.classList.remove('is-now'));
+
+  if(dayIdx === undefined) return; // weekend, nothing to mark
+
+  // mark today's day-head (desktop grid)
+  const head = document.querySelector(`.day-head[data-day="${dayIdx}"]`);
+  if(head){
+    head.classList.add('is-today');
+    head.insertAdjacentHTML('beforeend', `<span class="today-dot" title="Today"></span>`);
+  }
+
+  // mark today's mobile tab
+  const tab = document.querySelector(`#dayTabs button[data-idx="${dayIdx}"]`);
+  if(tab){
+    tab.insertAdjacentHTML('beforeend', `<span class="today-dot" title="Today"></span>`);
+  }
+
+  // mark current subject card(s), if class is happening right now
+  if(slotIdx !== -1){
+    document.querySelectorAll(`.card[data-day="${dayIdx}"][data-slot="${slotIdx}"]`).forEach(card => {
+      card.classList.add('is-now');
+      card.insertAdjacentHTML('beforeend', `<span class="now-label">Now</span><span class="now-dot" title="Happening now"></span>`);
+    });
+  }
+}
+
+// ---------- View toggle (mobile: Day / Full Week) ----------
+function wireViewToggle(){
+  const toggle = document.getElementById('viewToggle');
+  toggle.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      toggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.body.dataset.view = btn.dataset.view;
+    });
+  });
+}
+
+buildGrid();
+buildMobile();
+buildLegend();
+wireViewToggle();
+document.body.dataset.view = 'day';
+refreshNowIndicators();
+setInterval(refreshNowIndicators, 60000);
+
+// ---------- PWA: service worker + install prompt ----------
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+
+let deferredPrompt;
+const installBtn = document.getElementById('install-btn');
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'inline-block';
+});
+installBtn.addEventListener('click', async () => {
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  installBtn.style.display = 'none';
+});
+window.addEventListener('appinstalled', () => {
+  installBtn.style.display = 'none';
+});
+</script>
+</body>
+</html>
