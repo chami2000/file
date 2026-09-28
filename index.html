@@ -24,11 +24,10 @@
     --radius:16px;
 
     /* one colour per subject */
-    --c-eds:#5b8def;   /* Essential Digital Skills */
-    --c-mfc:#a78bfa;   /* Mathematics for Computing */
-    --c-ecs:#2dd4bf;   /* Essential Communication Skills - Advanced */
-    --c-ct:#f5b942;    /* Computational Thinking */
-    --c-eas:#f472b6;   /* Essential Academic Skills */
+    --c-wwd:#5b8def;   /* Working with Data */
+    --c-cmp:#a78bfa;   /* Computer Programming */
+    --c-dcld:#2dd4bf;  /* Digital Circuits and Logic Design */
+    --c-iai:#f5b942;   /* Introduction to Artificial Intelligence */
     --c-free:#4a443d;  /* Free slot */
   }
 
@@ -56,7 +55,7 @@
   .brand{display:flex; align-items:center; gap:10px;}
   .brand .mark{
     width:34px; height:34px; border-radius:10px;
-    background:linear-gradient(135deg, var(--c-ct), var(--c-eds));
+    background:linear-gradient(135deg, var(--c-iai), var(--c-wwd));
     display:flex; align-items:center; justify-content:center;
     font-weight:800; font-size:15px; color:#12100e; flex-shrink:0;
   }
@@ -273,7 +272,7 @@
     body[data-view="week"] .grid-wrap{padding-bottom:6px;}
   }
 
-  ::selection{background:var(--c-mfc); color:#141210;}
+  ::selection{background:var(--c-cmp); color:#141210;}
 </style>
 </head>
 <body>
@@ -283,7 +282,7 @@
     <div class="mark">TT</div>
     <div>
       <h1>My Timetable</h1>
-      <p>Tap a day to view · installed apps work offline</p>
+      <p>Group D · Tap a day to view</p>
     </div>
   </div>
   <button id="install-btn">Install App</button>
@@ -315,46 +314,40 @@
 <script>
 // ---------- Data ----------
 const SUBJECT_COLORS = {
-  "Essential Digital Skills": "var(--c-eds)",
-  "Mathematics for Computing": "var(--c-mfc)",
-  "Essential Communication Skills - Advanced": "var(--c-ecs)",
-  "Computational Thinking": "var(--c-ct)",
-  "Essential Academic Skills": "var(--c-eas)"
+  "Working with Data": "var(--c-wwd)",
+  "Computer Programming": "var(--c-cmp)",
+  "Digital Circuits and Logic Design": "var(--c-dcld)",
+  "Introduction to Artificial Intelligence": "var(--c-iai)"
 };
 
-const TIMES = ["08:30 AM – 10:30 AM", "10:30 AM – 12:30 PM", "01:30 PM – 03:30 PM", "03:30 PM – 05:30 PM"];
+const TIMES = ["08:30 AM – 10:30 AM", "10:30 AM – 12:30 PM", "12:30 PM – 02:30 PM"];
 
 const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
 
 const SCHEDULE = {
   Monday: [
-    { subject:"Essential Digital Skills", type:"Lecture", teacher:"Mr Razeen Ramzy & Ms. Imali Jayasekera", room:"1LA" },
-    { subject:"Computational Thinking", type:"Lecture", teacher:"Ms. Tharushi Amarasinghe", room:"5LA" },
-    null,
-    null
+    { subject:"Working with Data", type:"Lecture", teacher:"Mr. Chathura Wickramasinghe", room:"5LA" },
+    { subject:"Digital Circuits and Logic Design", type:"Lecture", teacher:"Mr. Indika Thuiyadura", room:"1LA" },
+    { subject:"Introduction to Artificial Intelligence", type:"Lecture", teacher:"Ms. Jananie Mayooresan & Mr. Indika Thuiyadura", room:"5LA" }
   ],
   Tuesday: [
-    { subject:"Mathematics for Computing", type:"Lecture", teacher:"Mr. Namal Malalasena", room:"5LA" },
-    { subject:"Essential Academic Skills", type:"Lecture", teacher:"Ms. Antoinette Hettiarachy", room:"5LA" },
-    { subject:"Mathematics for Computing", type:"Tutorial", teacher:"Ms Nadishika Pathirage", room:"0LA" },
-    null
+    { subject:"Computer Programming", type:"Lecture", teacher:"Mr. Nishan Harankahawa", room:"1LA" },
+    { subject:"Working with Data", type:"Tutorial", teacher:"Mr. Chathura Wickramasinghe", room:"1LA" },
+    { subject:"Computer Programming", type:"Tutorial", teacher:"Ms. Tharushi Amarasinghe", room:"5LB" }
   ],
   Wednesday: [
-    { subject:"Essential Communication Skills - Advanced", type:"Lecture", teacher:"Ms Nimesha Amarasooriya", room:"5LB" },
-    { subject:"Mathematics for Computing", type:"Tutorial", teacher:"Ms Nadishika Pathirage", room:"0LA" },
-    { subject:"Essential Digital Skills", type:"Tutorial", teacher:"Ms Nadishika Pathirage", room:"LAB 3" },
-    null
+    null,
+    { subject:"Computer Programming", type:"Tutorial", teacher:"Mr. Nishan Harankahawa", room:"3LB" },
+    { subject:"Digital Circuits and Logic Design", type:"Tutorial", teacher:"Mr. Indika Thuiyadura", room:"1LA" }
   ],
   Thursday: [
-    { subject:"Essential Digital Skills", type:"Tutorial", teacher:"Ms Nadishika Pathirage", room:"1LA" },
-    { subject:"Essential Communication Skills - Advanced", type:"Tutorial", teacher:"Ms. Michaela Peiris", room:"LAB 4" },
-    { subject:"Essential Academic Skills", type:"Tutorial", teacher:"Ms. Antoinette Hettiarachy", room:"5LA" },
+    { subject:"Introduction to Artificial Intelligence", type:"Tutorial", teacher:"Mr. Indika Thuiyadura", room:"1LA" },
+    { subject:"Working with Data", type:"Tutorial", teacher:"Mr. Chathura Wickramasinghe", room:"OLC" },
     null
   ],
   Friday: [
-    { subject:"Essential Communication Skills - Advanced", type:"Tutorial", teacher:"Ms. Michaela Peiris", room:"5LA" },
-    { subject:"Computational Thinking", type:"Tutorial", teacher:"Ms Anupama Balasooriya", room:"3LC" },
-    { subject:"Essential Academic Skills", type:"Tutorial", teacher:"Ms. Antoinette Hettiarachy", room:"0LA" },
+    null,
+    null,
     null
   ]
 };
@@ -368,8 +361,7 @@ const clockIcon = `<svg class="icon clock" viewBox="0 0 24 24" fill="none" strok
 const SLOT_RANGES = [
   [8*60+30, 10*60+30],
   [10*60+30, 12*60+30],
-  [13*60+30, 15*60+30],
-  [15*60+30, 17*60+30]
+  [12*60+30, 14*60+30]
 ];
 const DOW_TO_DAYIDX = {1:0, 2:1, 3:2, 4:3, 5:4}; // JS getDay(): Mon..Fri -> 0..4
 
